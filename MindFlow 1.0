@@ -1,0 +1,3426 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MindFlow Explorer</title>
+    <style>
+        /* CSS Variables */
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --primary-light: #a5b4fc;
+            --secondary: #64748b;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --error: #ef4444;
+            --background: #f8fafc;
+            --surface: #ffffff;
+            --text: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --shadow: 0 4px 16px rgba(0,0,0,0.08);
+            --shadow-hover: 0 8px 24px rgba(0,0,0,0.12);
+            --shadow-active: 0 2px 8px rgba(0,0,0,0.16);
+            --radius: 16px;
+            --radius-sm: 8px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --gradient-primary: linear-gradient(135deg, var(--primary) 0%, #8b5cf6 100%);
+            --gradient-surface: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+        }
+
+        /* Reset */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* Base Styles */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Inter', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: var(--text);
+            line-height: 1.6;
+            font-size: 16px;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        .app-container {
+            max-width: 100%;
+            min-height: 100vh;
+            background: var(--background);
+            position: relative;
+        }
+
+        .app-container::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 200px;
+            background: var(--gradient-primary);
+            z-index: -1;
+            opacity: 0.05;
+        }
+
+        /* Header */
+        .header {
+            background: var(--gradient-primary);
+            color: white;
+            padding: 1.5rem 1rem;
+            text-align: center;
+            box-shadow: var(--shadow);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            z-index: -1;
+        }
+
+        .header h1 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.025em;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .header p {
+            font-size: 0.9rem;
+            opacity: 0.95;
+            font-weight: 400;
+            letter-spacing: 0.01em;
+        }
+
+        /* Navigation */
+        .nav-tabs {
+            display: flex;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            position: relative;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+            padding: 0;
+            margin: 0;
+            width: 100%;
+        }
+
+        .nav-tabs::-webkit-scrollbar {
+            display: none;
+        }
+
+
+
+        .nav-tab {
+            flex: 1;
+            min-width: 0;
+            padding: 1.25rem 0.5rem;
+            text-align: center;
+            background: none;
+            border: none;
+            cursor: pointer;
+            transition: var(--transition);
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: var(--text-muted);
+            position: relative;
+            z-index: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .nav-tab.active {
+            color: var(--primary);
+            background: linear-gradient(to bottom, rgba(99, 102, 241, 0.05), transparent);
+            font-weight: 600;
+        }
+
+        .nav-tab:hover:not(.active) {
+            background: linear-gradient(to bottom, rgba(0,0,0,0.02), transparent);
+            color: var(--text);
+            transform: translateY(-1px);
+        }
+
+        .nav-tab:active {
+            transform: translateY(0);
+        }
+
+        /* Content */
+        .content {
+            padding: 1rem;
+            min-height: calc(100vh - 200px);
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            scroll-behavior: smooth;
+        }
+
+        .module {
+            display: none;
+        }
+
+        .module.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Cards */
+        .card {
+            background: var(--gradient-surface);
+            border-radius: var(--radius);
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+            box-shadow: var(--shadow);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            position: relative;
+            overflow: hidden;
+            transition: var(--transition);
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.3), transparent);
+        }
+
+        .card:hover {
+            box-shadow: var(--shadow-hover);
+            transform: translateY(-2px);
+            border-color: rgba(99, 102, 241, 0.2);
+        }
+
+        .card h3 {
+            color: var(--text);
+            margin-bottom: 1.5rem;
+            font-size: 1.25rem;
+            font-weight: 700;
+            letter-spacing: -0.025em;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* Flow Detector */
+        .flow-detector {
+            text-align: center;
+        }
+
+        .flow-meter {
+            width: 140px;
+            height: 140px;
+            border-radius: 50%;
+            margin: 2rem auto;
+            position: relative;
+            background: conic-gradient(from 0deg, var(--error) 0%, var(--warning) 25%, var(--success) 50%, var(--primary) 75%, #8b5cf6 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: flowPulse 3s ease-in-out infinite;
+            box-shadow: 0 8px 32px rgba(99, 102, 241, 0.2);
+        }
+
+        .flow-meter::before {
+            content: '';
+            width: 110px;
+            height: 110px;
+            background: var(--gradient-surface);
+            border-radius: 50%;
+            position: absolute;
+            box-shadow: inset 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .flow-meter::after {
+            content: '';
+            position: absolute;
+            width: 160px;
+            height: 160px;
+            border-radius: 50%;
+            background: conic-gradient(from 0deg, var(--error) 0%, var(--warning) 25%, var(--success) 50%, var(--primary) 75%, #8b5cf6 100%);
+            opacity: 0.1;
+            animation: flowRotate 8s linear infinite;
+            z-index: -1;
+        }
+
+        .flow-score {
+            font-size: 1.75rem;
+            font-weight: 800;
+            color: var(--primary);
+            z-index: 1;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        @keyframes flowPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        @keyframes flowRotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .question {
+            margin-bottom: 1.5rem;
+            padding: 1.5rem;
+            background: rgba(255, 255, 255, 0.6);
+            border-radius: var(--radius-sm);
+            border: 1px solid rgba(99, 102, 241, 0.1);
+            transition: var(--transition);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        .question:hover {
+            background: rgba(255, 255, 255, 0.8);
+            border-color: rgba(99, 102, 241, 0.2);
+            transform: translateY(-1px);
+        }
+
+        .question label {
+            display: block;
+            margin-bottom: 1rem;
+            font-weight: 600;
+            color: var(--text);
+            font-size: 0.95rem;
+        }
+
+        .slider {
+            width: 100%;
+            height: 8px;
+            border-radius: 4px;
+            background: linear-gradient(to right, #e2e8f0, #cbd5e1);
+            outline: none;
+            -webkit-appearance: none;
+            cursor: pointer;
+            position: relative;
+            transition: var(--transition);
+        }
+
+        .slider:hover {
+            background: linear-gradient(to right, #cbd5e1, #94a3b8);
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: var(--gradient-primary);
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+            transition: var(--transition);
+            border: 2px solid white;
+        }
+
+        .slider::-webkit-slider-thumb:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 16px rgba(99, 102, 241, 0.4);
+        }
+
+        .slider::-moz-range-thumb {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: var(--gradient-primary);
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+            border: 2px solid white;
+        }
+
+        /* Breathing */
+        .breathing-circle {
+            width: 220px;
+            height: 220px;
+            border: 6px solid transparent;
+            background: linear-gradient(white, white) padding-box, var(--gradient-primary) border-box;
+            border-radius: 50%;
+            margin: 3rem auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 4s cubic-bezier(0.4, 0, 0.6, 1);
+            position: relative;
+            box-shadow: 0 12px 40px rgba(99, 102, 241, 0.15);
+        }
+
+        .breathing-circle::before {
+            content: '';
+            position: absolute;
+            width: 240px;
+            height: 240px;
+            border-radius: 50%;
+            background: var(--gradient-primary);
+            opacity: 0.1;
+            z-index: -1;
+            transition: transform 4s cubic-bezier(0.4, 0, 0.6, 1);
+        }
+
+        .breathing-circle.inhale {
+            transform: scale(1.4);
+            background: linear-gradient(rgba(255, 255, 255, 0.95), rgba(248, 250, 252, 0.95)) padding-box, var(--gradient-primary) border-box;
+            box-shadow: 0 16px 48px rgba(99, 102, 241, 0.25);
+        }
+
+        .breathing-circle.inhale::before {
+            transform: scale(1.2);
+            opacity: 0.2;
+        }
+
+        .breathing-circle.inhale .breathing-text {
+            color: var(--primary);
+            text-shadow: 0 2px 8px rgba(255, 255, 255, 0.8);
+        }
+
+        .breathing-circle.exhale {
+            transform: scale(0.7);
+            background: linear-gradient(rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.98)) padding-box, var(--gradient-primary) border-box;
+            box-shadow: 0 8px 24px rgba(99, 102, 241, 0.1);
+        }
+
+        .breathing-circle.exhale::before {
+            transform: scale(0.8);
+            opacity: 0.05;
+        }
+
+        .breathing-circle.exhale .breathing-text {
+            color: var(--text);
+            text-shadow: 0 2px 4px rgba(255, 255, 255, 0.9);
+        }
+
+        .breathing-text {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--primary);
+            text-align: center;
+            z-index: 1;
+            text-shadow: 0 2px 8px rgba(255, 255, 255, 0.8);
+            transition: var(--transition);
+        }
+
+        /* Buttons */
+        .btn {
+            background: var(--gradient-primary);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: var(--radius-sm);
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            width: 100%;
+            margin: 0.75rem 0;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 16px rgba(99, 102, 241, 0.3);
+            letter-spacing: 0.025em;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.6s;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn:hover {
+            background: linear-gradient(135deg, var(--primary-dark) 0%, #7c3aed 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(99, 102, 241, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+            box-shadow: var(--shadow-active);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: var(--shadow);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, var(--secondary) 0%, #475569 100%);
+            box-shadow: 0 4px 16px rgba(100, 116, 139, 0.3);
+        }
+
+        .btn-secondary:hover {
+            background: linear-gradient(135deg, #475569 0%, #334155 100%);
+            box-shadow: 0 8px 24px rgba(100, 116, 139, 0.4);
+        }
+
+        .btn-small {
+            padding: 0.75rem 1.5rem;
+            font-size: 0.9rem;
+            width: auto;
+            display: inline-block;
+            margin: 0.25rem;
+        }
+
+        /* Mood Selector */
+        .mood-selector {
+            display: flex;
+            justify-content: space-around;
+            margin: 2rem 0;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .mood-btn {
+            background: var(--gradient-surface);
+            border: 2px solid rgba(99, 102, 241, 0.1);
+            border-radius: 50%;
+            width: 70px;
+            height: 70px;
+            font-size: 1.8rem;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+
+        .mood-btn::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            border-radius: 50%;
+            background: var(--gradient-primary);
+            opacity: 0;
+            transition: var(--transition);
+            z-index: -1;
+        }
+
+        .mood-btn:hover {
+            transform: translateY(-2px) scale(1.05);
+            box-shadow: 0 8px 20px rgba(99, 102, 241, 0.2);
+        }
+
+        .mood-btn:hover::before {
+            opacity: 0.1;
+        }
+
+        .mood-btn.selected {
+            border-color: var(--primary);
+            background: rgba(99, 102, 241, 0.1);
+            transform: scale(1.1);
+            box-shadow: 0 8px 24px rgba(99, 102, 241, 0.3);
+        }
+
+        .mood-btn.selected::before {
+            opacity: 0.2;
+        }
+
+        /* Diary */
+        .diary-entry textarea {
+            width: 100%;
+            min-height: 120px;
+            padding: 1.5rem;
+            border: 2px solid rgba(99, 102, 241, 0.1);
+            border-radius: var(--radius-sm);
+            font-family: inherit;
+            font-size: 1rem;
+            line-height: 1.6;
+            resize: vertical;
+            background: rgba(255, 255, 255, 0.8);
+            transition: var(--transition);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        .diary-entry textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: rgba(255, 255, 255, 0.95);
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+            transform: translateY(-1px);
+        }
+
+        .diary-entry textarea::placeholder {
+            color: var(--text-muted);
+            opacity: 0.7;
+        }
+
+        /* Techniques */
+        .quick-techniques {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .quick-tech-card {
+            background: var(--gradient-surface);
+            border: 2px solid rgba(99, 102, 241, 0.1);
+            border-radius: var(--radius-sm);
+            padding: 1.5rem 1rem;
+            text-align: center;
+            cursor: pointer;
+            transition: var(--transition);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .quick-tech-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(99, 102, 241, 0.2);
+        }
+
+        .quick-tech-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .quick-tech-name {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .technique-category {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin: 2rem 0 1rem 0;
+            padding: 0.75rem 1rem;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1));
+            border-radius: var(--radius-sm);
+            border-left: 4px solid var(--primary);
+        }
+
+        .technique-card {
+            background: var(--gradient-surface);
+            border-radius: var(--radius-sm);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border-left: 4px solid transparent;
+            background-image: linear-gradient(var(--gradient-surface), var(--gradient-surface)), var(--gradient-primary);
+            background-origin: border-box;
+            background-clip: padding-box, border-box;
+            cursor: pointer;
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+
+        .technique-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--gradient-primary);
+            opacity: 0;
+            transition: var(--transition);
+            z-index: -1;
+        }
+
+        .technique-card:hover {
+            transform: translateX(8px) translateY(-2px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .technique-card:hover::before {
+            opacity: 0.05;
+        }
+
+        .technique-title {
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+            font-size: 1.1rem;
+            color: var(--text);
+        }
+
+        .technique-description {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            line-height: 1.5;
+            margin-bottom: 0.75rem;
+        }
+
+        .technique-duration {
+            color: var(--primary);
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        /* Progress */
+        .progress-bar {
+            width: 100%;
+            height: 12px;
+            background: linear-gradient(to right, #f1f5f9, #e2e8f0);
+            border-radius: 6px;
+            overflow: hidden;
+            margin: 1.5rem 0;
+            position: relative;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .progress-bar::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent);
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--gradient-primary);
+            transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            border-radius: 6px;
+            box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+        }
+
+        .progress-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 50%;
+            background: linear-gradient(to bottom, rgba(255,255,255,0.3), transparent);
+            border-radius: 6px 6px 0 0;
+        }
+
+        /* Settings Controls */
+        .settings-row {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .vibration-status {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-top: 0.5rem;
+        }
+
+        .vibration-status.supported {
+            color: var(--success);
+        }
+
+        .vibration-status.not-supported {
+            color: var(--warning);
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            top: 24px;
+            right: 24px;
+            z-index: 1000;
+            background: var(--gradient-primary);
+            color: white;
+            padding: 1.25rem 1.5rem;
+            border-radius: var(--radius-sm);
+            font-size: 0.95rem;
+            font-weight: 500;
+            max-width: 320px;
+            box-shadow: 0 8px 32px rgba(99, 102, 241, 0.3);
+            animation: slideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .toast.success { 
+            background: linear-gradient(135deg, var(--success) 0%, #059669 100%);
+            box-shadow: 0 8px 32px rgba(16, 185, 129, 0.3);
+        }
+        
+        .toast.error { 
+            background: linear-gradient(135deg, var(--error) 0%, #dc2626 100%);
+            box-shadow: 0 8px 32px rgba(239, 68, 68, 0.3);
+        }
+        
+        .toast.warning { 
+            background: linear-gradient(135deg, var(--warning) 0%, #d97706 100%);
+            box-shadow: 0 8px 32px rgba(245, 158, 11, 0.3);
+        }
+
+        @keyframes slideIn {
+            from { 
+                transform: translateX(100%) scale(0.9); 
+                opacity: 0; 
+            }
+            to { 
+                transform: translateX(0) scale(1); 
+                opacity: 1; 
+            }
+        }
+
+        @keyframes slideOut {
+            from { 
+                transform: translateX(0) scale(1); 
+                opacity: 1; 
+            }
+            to { 
+                transform: translateX(100%) scale(0.9); 
+                opacity: 0; 
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 480px) {
+            .header h1 { font-size: 1.4rem; }
+            .header p { font-size: 0.85rem; }
+            .nav-tabs {
+                padding: 0;
+                gap: 0;
+            }
+            .nav-tab { 
+                font-size: 0.7rem; 
+                padding: 1rem 0.25rem; 
+                flex: 1;
+                min-width: 0;
+            }
+            .breathing-circle { width: 180px; height: 180px; }
+            .breathing-circle::before { width: 200px; height: 200px; }
+            .flow-meter { width: 120px; height: 120px; }
+            .flow-meter::before { width: 90px; height: 90px; }
+            .flow-meter::after { width: 140px; height: 140px; }
+            .content { 
+                padding: 1rem; 
+                max-height: calc(100vh - 140px);
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            .card { padding: 1.5rem; margin-bottom: 1rem; }
+            .mood-btn { width: 60px; height: 60px; font-size: 1.6rem; }
+            .btn { padding: 0.875rem 1.5rem; font-size: 0.95rem; }
+            .settings-row { flex-direction: column; align-items: stretch; }
+            .quick-techniques { grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
+            .quick-tech-card { padding: 1.25rem 0.75rem; }
+            .quick-tech-icon { font-size: 1.75rem; }
+            .quick-tech-name { font-size: 0.8rem; }
+            .technique-card { padding: 1.25rem; margin-bottom: 1rem; }
+            .technique-title { font-size: 1rem; }
+            .technique-description { font-size: 0.9rem; }
+            .brain-container {
+                max-height: 50vh;
+                overflow: auto;
+            }
+            .brain-info {
+                max-height: 60vh;
+                overflow-y: auto;
+                padding: 1.5rem;
+            }
+            .toast { 
+                top: 16px; 
+                right: 16px; 
+                left: 16px; 
+                max-width: none; 
+                padding: 1rem 1.25rem; 
+            }
+        }
+
+        @media (max-width: 320px) {
+            .header { padding: 1rem 0.75rem; }
+            .content { padding: 0.75rem; }
+            .card { padding: 1.25rem; }
+            .mood-selector { gap: 0.75rem; }
+            .mood-btn { width: 55px; height: 55px; font-size: 1.4rem; }
+        }
+
+        /* Brain Learning Styles */
+        .zoom-controls {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .brain-container {
+            display: flex;
+            justify-content: center;
+            margin: 2rem 0;
+            padding: 1rem;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.05), rgba(139, 92, 246, 0.05));
+            border-radius: var(--radius);
+            border: 1px solid rgba(99, 102, 241, 0.1);
+            overflow: auto;
+            max-height: 60vh;
+            position: relative;
+            -webkit-overflow-scrolling: touch;
+            scroll-behavior: smooth;
+        }
+
+        .brain-svg {
+            width: 100%;
+            max-width: 600px;
+            height: auto;
+            cursor: grab;
+            transition: transform 0.3s ease;
+            transform-origin: center center;
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+        }
+
+        .brain-svg:active {
+            cursor: grabbing;
+        }
+
+        .brain-svg.zoomed {
+            cursor: grab;
+        }
+
+        .brain-region {
+            cursor: pointer;
+            transition: var(--transition);
+            opacity: 0.8;
+        }
+
+        .brain-region:hover {
+            opacity: 1;
+            filter: brightness(1.1) drop-shadow(0 4px 12px rgba(99, 102, 241, 0.3));
+            transform: scale(1.02);
+            transform-origin: center;
+        }
+
+        .brain-region.active {
+            opacity: 1;
+            filter: brightness(1.2) drop-shadow(0 6px 16px rgba(99, 102, 241, 0.4));
+            animation: brainPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes brainPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .brain-label {
+            font-size: 14px;
+            font-weight: 600;
+            fill: var(--text);
+            pointer-events: none;
+            text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+        }
+
+        .brain-label-small {
+            font-size: 11px;
+            font-weight: 500;
+            fill: var(--text-muted);
+            pointer-events: none;
+            text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+        }
+
+        .brain-info {
+            margin-top: 2rem;
+            padding: 2rem;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: var(--radius-sm);
+            border: 2px solid rgba(99, 102, 241, 0.1);
+            min-height: 200px;
+            max-height: 70vh;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            scroll-behavior: smooth;
+            transition: var(--transition);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        .brain-info.active {
+            border-color: var(--primary);
+            background: rgba(255, 255, 255, 0.95);
+            box-shadow: 0 4px 16px rgba(99, 102, 241, 0.2);
+        }
+
+        .info-placeholder {
+            text-align: center;
+            color: var(--text-muted);
+        }
+
+        .info-placeholder h4 {
+            color: var(--primary);
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+        }
+
+        .region-info h4 {
+            color: var(--primary);
+            margin-bottom: 1rem;
+            font-size: 1.3rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .region-info .function-list {
+            list-style: none;
+            padding: 0;
+            margin: 1.5rem 0;
+        }
+
+        .region-info .function-list li {
+            padding: 0.75rem 0;
+            border-bottom: 1px solid rgba(99, 102, 241, 0.1);
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+        }
+
+        .region-info .function-list li:last-child {
+            border-bottom: none;
+        }
+
+        .region-info .function-icon {
+            font-size: 1.2rem;
+            margin-top: 0.1rem;
+            flex-shrink: 0;
+        }
+
+        .region-info .flow-connection {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1));
+            padding: 1.5rem;
+            border-radius: var(--radius-sm);
+            margin-top: 1.5rem;
+            border-left: 4px solid var(--primary);
+        }
+
+        .region-info .flow-connection h5 {
+            color: var(--primary);
+            margin-bottom: 0.75rem;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .region-info .flow-connection p {
+            color: var(--text);
+            line-height: 1.6;
+            margin: 0;
+        }
+
+        /* Mental State Grid */
+        .mental-state-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .state-card {
+            background: rgba(255, 255, 255, 0.8);
+            border: 2px solid rgba(99, 102, 241, 0.1);
+            border-radius: var(--radius-sm);
+            padding: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            transition: var(--transition);
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        .state-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(99, 102, 241, 0.2);
+        }
+
+        .state-card.low {
+            border-color: var(--error);
+            background: rgba(239, 68, 68, 0.05);
+        }
+
+        .state-card.medium {
+            border-color: var(--warning);
+            background: rgba(245, 158, 11, 0.05);
+        }
+
+        .state-card.high {
+            border-color: var(--success);
+            background: rgba(16, 185, 129, 0.05);
+        }
+
+        .state-icon {
+            font-size: 1.5rem;
+            flex-shrink: 0;
+        }
+
+        .state-info {
+            flex: 1;
+        }
+
+        .state-label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .state-value {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text);
+            margin-top: 0.25rem;
+        }
+
+        /* Check-in Questions */
+        .checkin-questions {
+            margin: 1.5rem 0;
+        }
+
+        .checkin-question {
+            margin-bottom: 1.5rem;
+        }
+
+        .checkin-question label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+            color: var(--text);
+        }
+
+        .quick-options {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .quick-option {
+            background: rgba(255, 255, 255, 0.8);
+            border: 2px solid rgba(99, 102, 241, 0.1);
+            border-radius: var(--radius-sm);
+            padding: 0.75rem 1rem;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            flex: 1;
+            min-width: 80px;
+            text-align: center;
+        }
+
+        .quick-option:hover {
+            border-color: var(--primary);
+            background: rgba(99, 102, 241, 0.05);
+            transform: translateY(-1px);
+        }
+
+        .quick-option.selected {
+            border-color: var(--primary);
+            background: var(--primary);
+            color: white;
+            transform: scale(1.02);
+        }
+
+        .checkin-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .checkin-actions .btn {
+            flex: 1;
+            margin: 0;
+        }
+
+        /* Smart Actions */
+        .smart-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .action-card {
+            background: rgba(255, 255, 255, 0.8);
+            border: 2px solid rgba(99, 102, 241, 0.1);
+            border-radius: var(--radius-sm);
+            padding: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            cursor: pointer;
+            transition: var(--transition);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        .action-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(99, 102, 241, 0.2);
+        }
+
+        .action-card.recommended {
+            border-color: var(--success);
+            background: rgba(16, 185, 129, 0.05);
+        }
+
+        .action-card.recommended::before {
+            content: '⭐';
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            font-size: 1.2rem;
+        }
+
+        .action-icon {
+            font-size: 1.75rem;
+            flex-shrink: 0;
+        }
+
+        .action-content {
+            flex: 1;
+        }
+
+        .action-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 0.25rem;
+        }
+
+        .action-desc {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            line-height: 1.4;
+        }
+
+        .action-time {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--primary);
+            background: rgba(99, 102, 241, 0.1);
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            flex-shrink: 0;
+        }
+
+        /* Day Stats */
+        .day-stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .stat-item {
+            background: rgba(255, 255, 255, 0.6);
+            border: 1px solid rgba(99, 102, 241, 0.1);
+            border-radius: var(--radius-sm);
+            padding: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            transition: var(--transition);
+        }
+
+        .stat-item:hover {
+            background: rgba(255, 255, 255, 0.8);
+            border-color: rgba(99, 102, 241, 0.2);
+            transform: translateY(-1px);
+        }
+
+        .stat-icon {
+            font-size: 1.25rem;
+            flex-shrink: 0;
+        }
+
+        .stat-content {
+            flex: 1;
+        }
+
+        .stat-number {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--primary);
+            line-height: 1;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 0.25rem;
+        }
+
+        /* Responsive adjustments for new components */
+        @media (max-width: 480px) {
+            .mental-state-grid {
+                grid-template-columns: 1fr;
+                gap: 0.75rem;
+            }
+            
+            .state-card {
+                padding: 1rem;
+            }
+            
+            .quick-options {
+                flex-direction: column;
+            }
+            
+            .quick-option {
+                flex: none;
+            }
+            
+            .checkin-actions {
+                flex-direction: column;
+            }
+            
+            .action-card {
+                padding: 1rem;
+            }
+            
+            .action-icon {
+                font-size: 1.5rem;
+            }
+            
+            .day-stats {
+                grid-template-columns: 1fr;
+                gap: 0.75rem;
+            }
+            
+            .stat-item {
+                padding: 0.875rem;
+            }
+        }
+
+        /* Accessibility */
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+
+        button:focus, input:focus, textarea:focus {
+            outline: 2px solid var(--primary);
+            outline-offset: 2px;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <h1>🧠 MindFlow Explorer</h1>
+            <p>Sua jornada personalizada de autoconhecimento</p>
+        </header>
+
+
+
+        <!-- Navigation -->
+        <nav class="nav-tabs" id="navTabs">
+            <button class="nav-tab active" data-module="flow">Flow</button>
+            <button class="nav-tab" data-module="breathing">Respiração</button>
+            <button class="nav-tab" data-module="techniques">Técnicas</button>
+            <button class="nav-tab" data-module="diary">Diário</button>
+            <button class="nav-tab" data-module="progress">Progresso</button>
+            <button class="nav-tab" data-module="learning">🧠</button>
+            <button class="nav-tab" data-module="settings">⚙️</button>
+        </nav>
+
+        <!-- Content -->
+        <main class="content">
+            <!-- Flow Module -->
+            <div id="flow" class="module active">
+                <!-- Estado Mental Atual -->
+                <div class="card">
+                    <h3>🎯 Seu Estado Mental Agora</h3>
+                    <div class="mental-state-grid">
+                        <div class="state-card" id="energyCard">
+                            <div class="state-icon">⚡</div>
+                            <div class="state-info">
+                                <div class="state-label">Energia</div>
+                                <div class="state-value" id="energyValue">Média</div>
+                            </div>
+                        </div>
+                        <div class="state-card" id="focusCard">
+                            <div class="state-icon">🎯</div>
+                            <div class="state-info">
+                                <div class="state-label">Foco</div>
+                                <div class="state-value" id="focusValue">Disperso</div>
+                            </div>
+                        </div>
+                        <div class="state-card" id="stressCard">
+                            <div class="state-icon">😌</div>
+                            <div class="state-info">
+                                <div class="state-label">Estresse</div>
+                                <div class="state-value" id="stressValue">Baixo</div>
+                            </div>
+                        </div>
+                        <div class="state-card" id="moodCard">
+                            <div class="state-icon">😊</div>
+                            <div class="state-info">
+                                <div class="state-label">Humor</div>
+                                <div class="state-value" id="moodValue">Neutro</div>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="btn" id="updateStateBtn">📊 Atualizar Estado Mental</button>
+                </div>
+
+                <!-- Check-in Rápido -->
+                <div class="card" id="quickCheckinCard" style="display: none;">
+                    <h3>⚡ Check-in Rápido (30 segundos)</h3>
+                    <div class="checkin-questions">
+                        <div class="checkin-question">
+                            <label>Como está sua energia?</label>
+                            <div class="quick-options">
+                                <button class="quick-option" data-category="energy" data-value="baixa">😴 Baixa</button>
+                                <button class="quick-option" data-category="energy" data-value="media">😐 Média</button>
+                                <button class="quick-option" data-category="energy" data-value="alta">⚡ Alta</button>
+                            </div>
+                        </div>
+                        <div class="checkin-question">
+                            <label>Seu foco está:</label>
+                            <div class="quick-options">
+                                <button class="quick-option" data-category="focus" data-value="disperso">🌪️ Disperso</button>
+                                <button class="quick-option" data-category="focus" data-value="medio">🎯 Médio</button>
+                                <button class="quick-option" data-category="focus" data-value="laser">🔥 Laser</button>
+                            </div>
+                        </div>
+                        <div class="checkin-question">
+                            <label>Nível de estresse:</label>
+                            <div class="quick-options">
+                                <button class="quick-option" data-category="stress" data-value="baixo">😌 Baixo</button>
+                                <button class="quick-option" data-category="stress" data-value="medio">😐 Médio</button>
+                                <button class="quick-option" data-category="stress" data-value="alto">😰 Alto</button>
+                            </div>
+                        </div>
+                        <div class="checkin-question">
+                            <label>Como está o humor?</label>
+                            <div class="quick-options">
+                                <button class="quick-option" data-category="mood" data-value="baixo">😔 Baixo</button>
+                                <button class="quick-option" data-category="mood" data-value="neutro">😐 Neutro</button>
+                                <button class="quick-option" data-category="mood" data-value="alto">😊 Alto</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="checkin-actions">
+                        <button class="btn" id="saveCheckinBtn">✅ Salvar Estado</button>
+                        <button class="btn btn-secondary" id="cancelCheckinBtn">❌ Cancelar</button>
+                    </div>
+                </div>
+
+                <!-- Ações Inteligentes -->
+                <div class="card">
+                    <h3>🚀 Ações Recomendadas</h3>
+                    <div class="smart-actions" id="smartActions">
+                        <div class="action-card" data-action="focus-boost">
+                            <div class="action-icon">🎯</div>
+                            <div class="action-content">
+                                <div class="action-title">Turbinar Foco</div>
+                                <div class="action-desc">Técnica de 2 minutos para concentração</div>
+                            </div>
+                            <div class="action-time">2min</div>
+                        </div>
+                        <div class="action-card" data-action="energy-boost">
+                            <div class="action-icon">⚡</div>
+                            <div class="action-content">
+                                <div class="action-title">Ativar Energia</div>
+                                <div class="action-desc">Desperte seu corpo e mente</div>
+                            </div>
+                            <div class="action-time">3min</div>
+                        </div>
+                        <div class="action-card" data-action="stress-relief">
+                            <div class="action-icon">😌</div>
+                            <div class="action-content">
+                                <div class="action-title">Aliviar Tensão</div>
+                                <div class="action-desc">Relaxamento rápido e eficaz</div>
+                            </div>
+                            <div class="action-time">5min</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Histórico do Dia -->
+                <div class="card">
+                    <h3>📈 Seu Dia em Números</h3>
+                    <div class="day-stats">
+                        <div class="stat-item">
+                            <div class="stat-icon">📊</div>
+                            <div class="stat-content">
+                                <div class="stat-number" id="todayCheckins">0</div>
+                                <div class="stat-label">Check-ins hoje</div>
+                            </div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-icon">🎯</div>
+                            <div class="stat-content">
+                                <div class="stat-number" id="focusTime">0h</div>
+                                <div class="stat-label">Tempo focado</div>
+                            </div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-icon">⚡</div>
+                            <div class="stat-content">
+                                <div class="stat-number" id="energyAvg">-</div>
+                                <div class="stat-label">Energia média</div>
+                            </div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-icon">😊</div>
+                            <div class="stat-content">
+                                <div class="stat-number" id="moodTrend">📈</div>
+                                <div class="stat-label">Tendência humor</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Breathing Module -->
+            <div id="breathing" class="module">
+                <div class="card">
+                    <h3>🫁 Respiração Consciente</h3>
+                    <div class="breathing-circle" id="breathingCircle">
+                        <div class="breathing-text" id="breathingText">Clique para começar</div>
+                    </div>
+                    <button class="btn" id="breathingBtn">Iniciar Respiração 4-7-8</button>
+                    <button class="btn btn-secondary" id="stopBreathingBtn">Parar</button>
+                </div>
+            </div>
+
+            <!-- Techniques Module -->
+            <div id="techniques" class="module">
+                <div class="card">
+                    <h3>🛠️ Biblioteca de Técnicas</h3>
+                    <p>Exercícios essenciais para diferentes momentos</p>
+                    
+                    <!-- Quick Access Grid -->
+                    <div class="quick-techniques">
+                        <div class="quick-tech-card" data-technique="micro-break">
+                            <div class="quick-tech-icon">⚡</div>
+                            <div class="quick-tech-name">Reset 30s</div>
+                        </div>
+                        <div class="quick-tech-card" data-technique="cold-water">
+                            <div class="quick-tech-icon">❄️</div>
+                            <div class="quick-tech-name">Ativação</div>
+                        </div>
+                        <div class="quick-tech-card" data-technique="box-breathing">
+                            <div class="quick-tech-icon">📦</div>
+                            <div class="quick-tech-name">Respiração</div>
+                        </div>
+                        <div class="quick-tech-card" data-technique="sensory-grounding">
+                            <div class="quick-tech-icon">👁️</div>
+                            <div class="quick-tech-name">Foco</div>
+                        </div>
+                    </div>
+                </div>
+
+
+            </div>
+
+            <!-- Diary Module -->
+            <div id="diary" class="module">
+                <div class="card">
+                    <h3>📝 Diário de Autoconhecimento</h3>
+                    <div class="mood-selector">
+                        <button class="mood-btn" data-mood="energized">⚡</button>
+                        <button class="mood-btn" data-mood="focused">🎯</button>
+                        <button class="mood-btn" data-mood="calm">😌</button>
+                        <button class="mood-btn" data-mood="scattered">🌪️</button>
+                        <button class="mood-btn" data-mood="tired">😴</button>
+                    </div>
+                    <div class="diary-entry">
+                        <textarea id="diaryText" placeholder="Como foi seu estado mental hoje? Que técnicas funcionaram?"></textarea>
+                    </div>
+                    <button class="btn" id="saveDiaryBtn">Salvar Entrada</button>
+                </div>
+            </div>
+
+            <!-- Progress Module -->
+            <div id="progress" class="module">
+                <div class="card">
+                    <h3>📈 Seu Progresso</h3>
+                    <div>
+                        <p>Estados de Flow esta semana:</p>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 68%"></div>
+                        </div>
+                        <small>68% dos dias com pelo menos um episódio de flow</small>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>🏆 Conquistas</h3>
+                    <p>🌟 <strong>Autoconhecimento Nível 1:</strong> Completou 7 dias de diário</p>
+                    <p>🧠 <strong>Flow Master:</strong> Atingiu estado de flow 5 vezes esta semana</p>
+                </div>
+            </div>
+
+            <!-- Learning Module -->
+            <div id="learning" class="module">
+                <div class="card">
+                    <h3>🧠 Anatomia do Cérebro</h3>
+                    <p>Clique em cada região para descobrir suas funções e como elas afetam seu estado mental</p>
+                    
+                    <p style="text-align: center; color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem;">
+                        💡 <strong>Dica:</strong> Use gestos de pinça para zoom ou role a tela para navegar
+                    </p>
+                    
+                    <div class="brain-container" id="brainContainer">
+                        <svg viewBox="0 0 900 700" class="brain-svg" id="brainSvg">
+                            <!-- Definições avançadas -->
+                            <defs>
+                                <!-- Gradientes específicos para cada região -->
+                                <linearGradient id="frontalGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" style="stop-color:#ddd6fe;stop-opacity:0.9" />
+                                    <stop offset="50%" style="stop-color:#c4b5fd;stop-opacity:0.8" />
+                                    <stop offset="100%" style="stop-color:#a78bfa;stop-opacity:0.7" />
+                                </linearGradient>
+                                
+                                <linearGradient id="parietalGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" style="stop-color:#e9d5ff;stop-opacity:0.9" />
+                                    <stop offset="50%" style="stop-color:#d8b4fe;stop-opacity:0.8" />
+                                    <stop offset="100%" style="stop-color:#c084fc;stop-opacity:0.7" />
+                                </linearGradient>
+                                
+                                <radialGradient id="temporalGradient" cx="50%" cy="50%" r="50%">
+                                    <stop offset="0%" style="stop-color:#d1fae5;stop-opacity:0.9" />
+                                    <stop offset="50%" style="stop-color:#a7f3d0;stop-opacity:0.8" />
+                                    <stop offset="100%" style="stop-color:#6ee7b7;stop-opacity:0.7" />
+                                </radialGradient>
+                                
+                                <linearGradient id="occipitalGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" style="stop-color:#fef3c7;stop-opacity:0.9" />
+                                    <stop offset="50%" style="stop-color:#fde68a;stop-opacity:0.8" />
+                                    <stop offset="100%" style="stop-color:#fbbf24;stop-opacity:0.7" />
+                                </linearGradient>
+                                
+                                <radialGradient id="cerebeloGradient" cx="50%" cy="30%" r="70%">
+                                    <stop offset="0%" style="stop-color:#fecaca;stop-opacity:0.9" />
+                                    <stop offset="50%" style="stop-color:#fca5a5;stop-opacity:0.8" />
+                                    <stop offset="100%" style="stop-color:#f87171;stop-opacity:0.7" />
+                                </radialGradient>
+                                
+                                <linearGradient id="troncoGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                                    <stop offset="0%" style="stop-color:#e2e8f0;stop-opacity:0.9" />
+                                    <stop offset="50%" style="stop-color:#cbd5e1;stop-opacity:0.8" />
+                                    <stop offset="100%" style="stop-color:#94a3b8;stop-opacity:0.7" />
+                                </linearGradient>
+                                
+                                <radialGradient id="limbicoGradient" cx="50%" cy="50%" r="50%">
+                                    <stop offset="0%" style="stop-color:#fce7f3;stop-opacity:0.6" />
+                                    <stop offset="50%" style="stop-color:#fbcfe8;stop-opacity:0.5" />
+                                    <stop offset="100%" style="stop-color:#f9a8d4;stop-opacity:0.4" />
+                                </radialGradient>
+                                
+                                <!-- Filtros avançados -->
+                                <filter id="brainShadow" x="-30%" y="-30%" width="160%" height="160%">
+                                    <feGaussianBlur in="SourceAlpha" stdDeviation="4"/>
+                                    <feOffset dx="3" dy="6" result="offset"/>
+                                    <feFlood flood-color="rgba(99, 102, 241, 0.2)"/>
+                                    <feComposite in2="offset" operator="in"/>
+                                    <feMerge>
+                                        <feMergeNode/>
+                                        <feMergeNode in="SourceGraphic"/>
+                                    </feMerge>
+                                </filter>
+                                
+                                <filter id="glowEffect" x="-50%" y="-50%" width="200%" height="200%">
+                                    <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                                    <feMerge>
+                                        <feMergeNode in="coloredBlur"/>
+                                        <feMergeNode in="SourceGraphic"/>
+                                    </feMerge>
+                                </filter>
+                                
+                                <!-- Padrões de textura -->
+                                <pattern id="neuralPattern" patternUnits="userSpaceOnUse" width="20" height="20">
+                                    <circle cx="10" cy="10" r="1" fill="rgba(99, 102, 241, 0.1)"/>
+                                    <circle cx="5" cy="5" r="0.5" fill="rgba(99, 102, 241, 0.05)"/>
+                                    <circle cx="15" cy="15" r="0.5" fill="rgba(99, 102, 241, 0.05)"/>
+                                </pattern>
+                            </defs>
+                            
+                            <!-- Fundo do cérebro com textura neural -->
+                            <ellipse cx="450" cy="350" rx="380" ry="280" 
+                                     fill="url(#neuralPattern)" 
+                                     opacity="0.3"/>
+                            
+                            <!-- Sulcos e fissuras principais -->
+                            <path d="M 200 180 Q 300 160 400 170 Q 500 180 600 200" 
+                                  stroke="rgba(100, 116, 139, 0.4)" 
+                                  stroke-width="3" 
+                                  fill="none" 
+                                  stroke-dasharray="2,3"/>
+                            
+                            <path d="M 450 200 Q 480 250 500 300 Q 520 350 540 400" 
+                                  stroke="rgba(100, 116, 139, 0.4)" 
+                                  stroke-width="2" 
+                                  fill="none" 
+                                  stroke-dasharray="2,3"/>
+                            
+                            <!-- Córtex Frontal - Mais detalhado -->
+                            <path d="M 120 220 Q 180 140 280 150 Q 380 160 450 190 Q 490 210 485 270 Q 480 320 440 360 Q 400 380 350 385 Q 300 390 250 380 Q 200 370 160 350 Q 120 320 110 270 Q 105 240 120 220 Z" 
+                                  class="brain-region" 
+                                  data-region="frontal" 
+                                  fill="url(#frontalGradient)" 
+                                  stroke="#6366f1" 
+                                  stroke-width="2.5" 
+                                  filter="url(#brainShadow)"/>
+                            
+                            <!-- Área de Broca (dentro do frontal) -->
+                            <ellipse cx="200" cy="280" rx="25" ry="20" 
+                                     class="brain-region" 
+                                     data-region="broca" 
+                                     fill="rgba(99, 102, 241, 0.6)" 
+                                     stroke="#4f46e5" 
+                                     stroke-width="1.5"/>
+                            
+                            <!-- Córtex Motor Primário -->
+                            <path d="M 380 200 Q 420 190 450 200 Q 470 210 465 240 Q 460 270 440 290 Q 420 300 400 295 Q 380 290 370 270 Q 365 240 380 200 Z" 
+                                  class="brain-region" 
+                                  data-region="motor" 
+                                  fill="rgba(139, 92, 246, 0.5)" 
+                                  stroke="#8b5cf6" 
+                                  stroke-width="1.5"/>
+                            
+                            <!-- Córtex Parietal - Mais anatômico -->
+                            <path d="M 450 190 Q 530 170 620 190 Q 680 210 690 270 Q 685 330 650 380 Q 610 420 560 430 Q 510 435 470 420 Q 440 400 430 370 Q 425 340 435 310 Q 445 280 450 250 Q 455 220 450 190 Z" 
+                                  class="brain-region" 
+                                  data-region="parietal" 
+                                  fill="url(#parietalGradient)" 
+                                  stroke="#8b5cf6" 
+                                  stroke-width="2.5" 
+                                  filter="url(#brainShadow)"/>
+                            
+                            <!-- Córtex Somatossensorial -->
+                            <path d="M 480 220 Q 520 210 550 220 Q 570 230 565 260 Q 560 290 540 310 Q 520 320 500 315 Q 480 310 470 290 Q 465 260 480 220 Z" 
+                                  class="brain-region" 
+                                  data-region="somatossensorial" 
+                                  fill="rgba(139, 92, 246, 0.6)" 
+                                  stroke="#7c3aed" 
+                                  stroke-width="1.5"/>
+                            
+                            <!-- Córtex Temporal - Mais detalhado -->
+                            <path d="M 160 350 Q 220 370 280 385 Q 340 395 400 390 Q 450 395 480 420 Q 490 460 470 510 Q 440 550 400 570 Q 350 585 300 580 Q 250 575 200 560 Q 150 540 120 510 Q 100 480 105 450 Q 110 420 130 395 Q 150 370 160 350 Z" 
+                                  class="brain-region" 
+                                  data-region="temporal" 
+                                  fill="url(#temporalGradient)" 
+                                  stroke="#10b981" 
+                                  stroke-width="2.5" 
+                                  filter="url(#brainShadow)"/>
+                            
+                            <!-- Área de Wernicke -->
+                            <ellipse cx="320" cy="450" rx="30" ry="25" 
+                                     class="brain-region" 
+                                     data-region="wernicke" 
+                                     fill="rgba(16, 185, 129, 0.6)" 
+                                     stroke="#059669" 
+                                     stroke-width="1.5"/>
+                            
+                            <!-- Córtex Auditivo -->
+                            <ellipse cx="250" cy="420" rx="20" ry="15" 
+                                     class="brain-region" 
+                                     data-region="auditivo" 
+                                     fill="rgba(16, 185, 129, 0.5)" 
+                                     stroke="#10b981" 
+                                     stroke-width="1"/>
+                            
+                            <!-- Córtex Occipital - Mais realista -->
+                            <path d="M 650 380 Q 700 390 740 420 Q 770 450 765 500 Q 760 550 730 590 Q 690 620 640 625 Q 590 630 540 615 Q 510 600 500 580 Q 495 560 500 540 Q 510 520 530 500 Q 560 480 590 465 Q 620 450 650 380 Z" 
+                                  class="brain-region" 
+                                  data-region="occipital" 
+                                  fill="url(#occipitalGradient)" 
+                                  stroke="#f59e0b" 
+                                  stroke-width="2.5" 
+                                  filter="url(#brainShadow)"/>
+                            
+                            <!-- Córtex Visual Primário -->
+                            <ellipse cx="680" cy="520" rx="25" ry="30" 
+                                     class="brain-region" 
+                                     data-region="visual" 
+                                     fill="rgba(245, 158, 11, 0.6)" 
+                                     stroke="#d97706" 
+                                     stroke-width="1.5"/>
+                            
+                            <!-- Cerebelo - Mais detalhado com folhas cerebelares -->
+                            <ellipse cx="600" cy="550" rx="90" ry="70" 
+                                     class="brain-region" 
+                                     data-region="cerebelo" 
+                                     fill="url(#cerebeloGradient)" 
+                                     stroke="#ef4444" 
+                                     stroke-width="2.5" 
+                                     filter="url(#brainShadow)"/>
+                            
+                            <!-- Folhas cerebelares (linhas internas) -->
+                            <g stroke="rgba(239, 68, 68, 0.4)" stroke-width="1" fill="none">
+                                <path d="M 530 530 Q 600 520 670 530"/>
+                                <path d="M 535 545 Q 600 535 665 545"/>
+                                <path d="M 540 560 Q 600 550 660 560"/>
+                                <path d="M 545 575 Q 600 565 655 575"/>
+                            </g>
+                            
+                            <!-- Tronco Cerebral - Mais anatômico -->
+                            <path d="M 420 520 Q 440 515 460 520 L 465 580 Q 470 620 465 660 Q 460 680 440 685 Q 420 690 400 685 Q 380 680 375 660 Q 370 620 375 580 L 380 520 Q 400 515 420 520 Z" 
+                                  class="brain-region" 
+                                  data-region="tronco" 
+                                  fill="url(#troncoGradient)" 
+                                  stroke="#64748b" 
+                                  stroke-width="2.5" 
+                                  filter="url(#brainShadow)"/>
+                            
+                            <!-- Mesencéfalo -->
+                            <ellipse cx="420" cy="540" rx="20" ry="15" 
+                                     fill="rgba(100, 116, 139, 0.6)" 
+                                     stroke="#475569"/>
+                            
+                            <!-- Ponte -->
+                            <ellipse cx="420" cy="580" rx="25" ry="20" 
+                                     fill="rgba(100, 116, 139, 0.5)" 
+                                     stroke="#64748b"/>
+                            
+                            <!-- Bulbo -->
+                            <ellipse cx="420" cy="620" rx="22" ry="25" 
+                                     fill="rgba(100, 116, 139, 0.4)" 
+                                     stroke="#64748b"/>
+                            
+                            <!-- Sistema Límbico - Mais visível -->
+                            <ellipse cx="380" cy="380" rx="80" ry="50" 
+                                     class="brain-region" 
+                                     data-region="limbico" 
+                                     fill="url(#limbicoGradient)" 
+                                     stroke="#ec4899" 
+                                     stroke-width="2" 
+                                     stroke-dasharray="8,4" 
+                                     filter="url(#glowEffect)"/>
+                            
+                            <!-- Hipocampo - Formato mais realista -->
+                            <path d="M 340 360 Q 370 350 400 360 Q 430 370 435 400 Q 430 430 400 440 Q 370 445 340 435 Q 310 425 305 400 Q 310 375 340 360 Z" 
+                                  class="brain-region" 
+                                  data-region="hipocampo" 
+                                  fill="rgba(139, 92, 246, 0.7)" 
+                                  stroke="#8b5cf6" 
+                                  stroke-width="2"/>
+                            
+                            <!-- Amígdala - Mais proeminente -->
+                            <ellipse cx="300" cy="390" rx="18" ry="25" 
+                                     class="brain-region" 
+                                     data-region="amigdala" 
+                                     fill="rgba(239, 68, 68, 0.7)" 
+                                     stroke="#ef4444" 
+                                     stroke-width="2"/>
+                            
+                            <!-- Tálamo -->
+                            <ellipse cx="420" cy="350" rx="25" ry="20" 
+                                     class="brain-region" 
+                                     data-region="talamo" 
+                                     fill="rgba(168, 85, 247, 0.5)" 
+                                     stroke="#a855f7" 
+                                     stroke-width="1.5"/>
+                            
+                            <!-- Hipotálamo -->
+                            <ellipse cx="400" cy="380" rx="15" ry="12" 
+                                     class="brain-region" 
+                                     data-region="hipotalamo" 
+                                     fill="rgba(236, 72, 153, 0.6)" 
+                                     stroke="#ec4899" 
+                                     stroke-width="1.5"/>
+                            
+                            <!-- Corpo Caloso -->
+                            <path d="M 250 300 Q 350 280 450 300" 
+                                  stroke="rgba(100, 116, 139, 0.6)" 
+                                  stroke-width="8" 
+                                  fill="none" 
+                                  stroke-linecap="round"/>
+                            
+                            <!-- Conexões neurais (linhas pontilhadas) -->
+                            <g stroke="rgba(99, 102, 241, 0.3)" stroke-width="1" fill="none" stroke-dasharray="2,4">
+                                <path d="M 300 250 Q 350 300 400 350"/>
+                                <path d="M 500 250 Q 450 300 400 350"/>
+                                <path d="M 350 450 Q 380 400 420 380"/>
+                                <path d="M 600 300 Q 500 350 420 380"/>
+                            </g>
+                            
+                            <!-- Labels principais -->
+                            <text x="300" y="240" text-anchor="middle" class="brain-label">Córtex Frontal</text>
+                            <text x="580" y="240" text-anchor="middle" class="brain-label">Parietal</text>
+                            <text x="280" y="500" text-anchor="middle" class="brain-label">Temporal</text>
+                            <text x="680" y="470" text-anchor="middle" class="brain-label">Occipital</text>
+                            <text x="600" y="590" text-anchor="middle" class="brain-label">Cerebelo</text>
+                            <text x="420" y="640" text-anchor="middle" class="brain-label-small">Tronco</text>
+                            
+                            <!-- Labels específicos -->
+                            <text x="200" y="295" text-anchor="middle" class="brain-label-small">Broca</text>
+                            <text x="320" y="470" text-anchor="middle" class="brain-label-small">Wernicke</text>
+                            <text x="420" y="365" text-anchor="middle" class="brain-label-small">Tálamo</text>
+                            <text x="370" y="410" text-anchor="middle" class="brain-label-small">Hipocampo</text>
+                            <text x="300" y="415" text-anchor="middle" class="brain-label-small">Amígdala</text>
+                            
+                            <!-- Indicadores de atividade (pontos pulsantes) -->
+                            <g class="activity-indicators">
+                                <circle cx="300" cy="250" r="3" fill="#6366f1" opacity="0.8">
+                                    <animate attributeName="opacity" values="0.3;1;0.3" dur="2s" repeatCount="indefinite"/>
+                                </circle>
+                                <circle cx="580" cy="250" r="3" fill="#8b5cf6" opacity="0.8">
+                                    <animate attributeName="opacity" values="0.3;1;0.3" dur="2.5s" repeatCount="indefinite"/>
+                                </circle>
+                                <circle cx="420" cy="380" r="2" fill="#ec4899" opacity="0.8">
+                                    <animate attributeName="opacity" values="0.3;1;0.3" dur="1.8s" repeatCount="indefinite"/>
+                                </circle>
+                            </g>
+                        </svg>
+                    </div>
+                    
+                    <div class="brain-info" id="brainInfo">
+                        <div class="info-placeholder">
+                            <h4>🎯 Explore seu cérebro!</h4>
+                            <p>Clique em qualquer região colorida para descobrir suas funções e como ela influencia seu estado mental e capacidade de flow.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings Module -->
+            <div id="settings" class="module">
+                <div class="card">
+                    <h3>⚙️ Configurações</h3>
+                    <button class="btn" id="backupBtn">📥 Criar Backup</button>
+                    <button class="btn btn-secondary" id="importBtn">📤 Importar Backup</button>
+                    <input type="file" id="backupFile" accept=".json" style="display: none;">
+                </div>
+
+                <div class="card">
+                    <h3>📳 Vibração</h3>
+                    <div class="settings-row">
+                        <button class="btn btn-small" id="vibrationToggle">📳 Vibração: Ligada</button>
+                        <button class="btn btn-secondary btn-small" id="testVibration">🧪 Testar</button>
+                    </div>
+                    <p class="vibration-status" id="vibrationStatus">
+                        ✅ Vibração disponível neste dispositivo
+                    </p>
+                </div>
+
+                <div class="card">
+                    <h3>📊 Estatísticas</h3>
+                    <p><strong>Sessões de respiração:</strong> <span id="breathingStats">0</span></p>
+                    <p><strong>Entradas no diário:</strong> <span id="diaryStats">0</span></p>
+                    <p><strong>Técnicas experimentadas:</strong> <span id="techniqueStats">0</span></p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        'use strict';
+
+        // Vibration Controller
+        class VibrationController {
+            constructor() {
+                this.detectEnvironment();
+                this.enabled = this.loadSetting();
+                this.updateStatus();
+            }
+
+            detectEnvironment() {
+                // Detecta se está rodando em APK/WebView
+                this.isAPK = this.checkIfAPK();
+                this.isWebViewSupported = 'vibrate' in navigator;
+                this.isAndroidInterface = typeof Android !== 'undefined';
+                
+                // Múltiplas formas de suporte
+                this.isSupported = this.isWebViewSupported || this.isAndroidInterface || this.isAPK;
+                
+                console.log('Vibration Environment:', {
+                    isAPK: this.isAPK,
+                    isWebViewSupported: this.isWebViewSupported,
+                    isAndroidInterface: this.isAndroidInterface,
+                    isSupported: this.isSupported
+                });
+            }
+
+            checkIfAPK() {
+                // Múltiplas verificações para detectar APK
+                const userAgent = navigator.userAgent.toLowerCase();
+                const isWebView = userAgent.includes('wv') || 
+                                userAgent.includes('webview') ||
+                                window.location.protocol === 'file:' ||
+                                !window.location.hostname ||
+                                window.location.hostname === 'localhost';
+                
+                // Verifica se tem interface Android nativa
+                const hasAndroidInterface = typeof Android !== 'undefined' ||
+                                          typeof window.Android !== 'undefined' ||
+                                          typeof AndroidInterface !== 'undefined';
+                
+                return isWebView || hasAndroidInterface;
+            }
+
+            loadSetting() {
+                const saved = localStorage.getItem('mindflow-vibration');
+                return saved !== null ? JSON.parse(saved) : true;
+            }
+
+            saveSetting() {
+                localStorage.setItem('mindflow-vibration', JSON.stringify(this.enabled));
+            }
+
+            vibrate(pattern) {
+                if (!this.enabled) return false;
+                
+                // Tenta múltiplos métodos de vibração
+                return this.tryVibrationMethods(pattern);
+            }
+
+            tryVibrationMethods(pattern) {
+                const patternArray = Array.isArray(pattern) ? pattern : [pattern];
+                let success = false;
+
+                // Método 1: Interface Android nativa (mais confiável para APK)
+                if (typeof Android !== 'undefined' && Android.vibrate) {
+                    try {
+                        if (patternArray.length === 1) {
+                            Android.vibrate(patternArray[0]);
+                        } else {
+                            Android.vibratePattern(JSON.stringify(patternArray));
+                        }
+                        success = true;
+                        console.log('Vibration via Android interface:', patternArray);
+                    } catch (error) {
+                        console.warn('Android interface vibration failed:', error);
+                    }
+                }
+
+                // Método 2: Interface alternativa
+                if (!success && typeof window.Android !== 'undefined' && window.Android.vibrate) {
+                    try {
+                        window.Android.vibrate(patternArray[0] || 100);
+                        success = true;
+                        console.log('Vibration via window.Android:', patternArray);
+                    } catch (error) {
+                        console.warn('Window Android vibration failed:', error);
+                    }
+                }
+
+                // Método 3: Navigator vibrate (web e alguns WebViews)
+                if (!success && 'vibrate' in navigator) {
+                    try {
+                        navigator.vibrate(patternArray);
+                        success = true;
+                        console.log('Vibration via navigator:', patternArray);
+                    } catch (error) {
+                        console.warn('Navigator vibration failed:', error);
+                    }
+                }
+
+                // Método 4: Fallback para APK sem interface
+                if (!success && this.isAPK) {
+                    try {
+                        // Tenta forçar vibração via diferentes APIs
+                        if (window.plugins && window.plugins.vibration) {
+                            window.plugins.vibration.vibrate(patternArray[0] || 100);
+                            success = true;
+                        } else if (window.navigator && window.navigator.notification) {
+                            window.navigator.notification.vibrate(patternArray[0] || 100);
+                            success = true;
+                        }
+                        console.log('Vibration via fallback method:', patternArray);
+                    } catch (error) {
+                        console.warn('Fallback vibration failed:', error);
+                    }
+                }
+
+                // Método 5: Simulação visual se nada funcionar
+                if (!success) {
+                    this.simulateVibration();
+                    console.log('Vibration simulated visually');
+                }
+
+                return success;
+            }
+
+            simulateVibration() {
+                // Feedback visual quando vibração não está disponível
+                document.body.style.transition = 'transform 0.05s';
+                document.body.style.transform = 'translateX(2px)';
+                setTimeout(() => {
+                    document.body.style.transform = 'translateX(-2px)';
+                    setTimeout(() => {
+                        document.body.style.transform = 'translateX(0)';
+                        setTimeout(() => {
+                            document.body.style.transition = '';
+                        }, 50);
+                    }, 25);
+                }, 25);
+            }
+
+            // Predefined patterns (in milliseconds)
+            patterns = {
+                gentle: [100],
+                double: [100, 100, 100],
+                pulse: [200, 100, 200],
+                breatheIn: [300],
+                breatheOut: [150, 50, 150],
+                hold: [50, 50, 50],
+                success: [100, 50, 100, 50, 200],
+                notification: [200, 100, 200],
+                technique: [150, 100, 150, 100, 300]
+            };
+
+            toggle() {
+                this.enabled = !this.enabled;
+                this.saveSetting();
+                this.updateStatus();
+                return this.enabled;
+            }
+
+            updateStatus() {
+                const statusEl = document.getElementById('vibrationStatus');
+                const toggleBtn = document.getElementById('vibrationToggle');
+                
+                if (!statusEl || !toggleBtn) return;
+
+                let statusText = '';
+                let statusClass = 'vibration-status supported';
+
+                if (this.isAPK) {
+                    statusText = this.enabled 
+                        ? '📱 APK: Vibração ativada - feedback tátil disponível'
+                        : '📱 APK: Vibração desativada - ative para feedback tátil';
+                } else if (this.isWebViewSupported) {
+                    statusText = this.enabled 
+                        ? '🌐 Web: Vibração ativada - você sentirá feedback durante as práticas'
+                        : '🌐 Web: Vibração desativada - ative para feedback tátil';
+                } else {
+                    statusText = '⚠️ Vibração limitada - feedback visual será usado';
+                    statusClass = 'vibration-status not-supported';
+                }
+
+                statusEl.textContent = statusText;
+                statusEl.className = statusClass;
+                toggleBtn.textContent = this.enabled 
+                    ? '📳 Vibração: Ligada' 
+                    : '📳 Vibração: Desligada';
+                toggleBtn.disabled = false; // Sempre permite toggle
+            }
+
+            test() {
+                console.log('Testing vibration...');
+                const success = this.vibrate(this.patterns.notification);
+                
+                // Log detalhado para debug
+                console.log('Vibration test result:', {
+                    success,
+                    isAPK: this.isAPK,
+                    isWebViewSupported: this.isWebViewSupported,
+                    isAndroidInterface: this.isAndroidInterface,
+                    enabled: this.enabled
+                });
+                
+                return success;
+            }
+
+            isEnabled() {
+                return this.enabled && this.isSupported;
+            }
+        }
+
+        // App State Management
+        class AppState {
+            constructor() {
+                this.data = {
+                    flowScore: 75,
+                    currentMood: null,
+                    breathingActive: false,
+                    diaryEntries: [],
+                    mentalState: {
+                        energy: 'media',
+                        focus: 'disperso', 
+                        stress: 'baixo',
+                        mood: 'neutro'
+                    },
+                    dailyCheckins: [],
+                    stats: {
+                        breathingSessions: 0,
+                        diaryEntries: 0,
+                        techniquesUsed: new Set(),
+                        todayCheckins: 0,
+                        focusTime: 0
+                    }
+                };
+                this.loadFromStorage();
+            }
+
+            loadFromStorage() {
+                try {
+                    const saved = localStorage.getItem('mindflow-data');
+                    if (saved) {
+                        const parsed = JSON.parse(saved);
+                        this.data = { ...this.data, ...parsed };
+                        // Convert Set back from array
+                        if (parsed.stats && parsed.stats.techniquesUsed) {
+                            this.data.stats.techniquesUsed = new Set(parsed.stats.techniquesUsed);
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error loading data:', error);
+                }
+            }
+
+            saveToStorage() {
+                try {
+                    const toSave = { ...this.data };
+                    // Convert Set to array for JSON
+                    toSave.stats.techniquesUsed = Array.from(this.data.stats.techniquesUsed);
+                    localStorage.setItem('mindflow-data', JSON.stringify(toSave));
+                } catch (error) {
+                    console.error('Error saving data:', error);
+                }
+            }
+
+            updateFlowScore(score) {
+                this.data.flowScore = score;
+                this.saveToStorage();
+            }
+
+            addDiaryEntry(mood, text) {
+                this.data.diaryEntries.push({
+                    date: new Date().toISOString(),
+                    mood,
+                    text,
+                    flowScore: this.data.flowScore
+                });
+                this.data.stats.diaryEntries = this.data.diaryEntries.length;
+                this.saveToStorage();
+            }
+
+            incrementBreathingSessions() {
+                this.data.stats.breathingSessions++;
+                this.saveToStorage();
+            }
+
+            addTechniqueUsed(technique) {
+                this.data.stats.techniquesUsed.add(technique);
+                this.saveToStorage();
+            }
+
+            updateMentalState(newState) {
+                this.data.mentalState = { ...this.data.mentalState, ...newState };
+                
+                // Add to daily checkins
+                const today = new Date().toDateString();
+                const checkin = {
+                    date: new Date().toISOString(),
+                    dateString: today,
+                    ...this.data.mentalState
+                };
+                
+                this.data.dailyCheckins.push(checkin);
+                
+                // Update today's stats
+                const todayCheckins = this.data.dailyCheckins.filter(c => c.dateString === today);
+                this.data.stats.todayCheckins = todayCheckins.length;
+                
+                this.saveToStorage();
+            }
+
+            getTodayStats() {
+                const today = new Date().toDateString();
+                const todayCheckins = this.data.dailyCheckins.filter(c => c.dateString === today);
+                
+                if (todayCheckins.length === 0) {
+                    return {
+                        checkins: 0,
+                        energyAvg: '-',
+                        moodTrend: '📊',
+                        focusTime: '0h'
+                    };
+                }
+                
+                // Calculate averages
+                const energyValues = { 'baixa': 1, 'media': 2, 'alta': 3 };
+                const moodValues = { 'baixo': 1, 'neutro': 2, 'alto': 3 };
+                
+                const avgEnergy = todayCheckins.reduce((sum, c) => sum + energyValues[c.energy], 0) / todayCheckins.length;
+                const avgMood = todayCheckins.reduce((sum, c) => sum + moodValues[c.mood], 0) / todayCheckins.length;
+                
+                // Determine trend
+                let moodTrend = '📊';
+                if (todayCheckins.length > 1) {
+                    const firstMood = moodValues[todayCheckins[0].mood];
+                    const lastMood = moodValues[todayCheckins[todayCheckins.length - 1].mood];
+                    if (lastMood > firstMood) moodTrend = '📈';
+                    else if (lastMood < firstMood) moodTrend = '📉';
+                    else moodTrend = '➡️';
+                }
+                
+                return {
+                    checkins: todayCheckins.length,
+                    energyAvg: avgEnergy >= 2.5 ? 'Alta' : avgEnergy >= 1.5 ? 'Média' : 'Baixa',
+                    moodTrend,
+                    focusTime: Math.floor(this.data.stats.focusTime / 60) + 'h'
+                };
+            }
+        }
+
+        // Brain Learning Data
+        const brainRegions = {
+            frontal: {
+                name: "Córtex Pré-Frontal",
+                icon: "🎯",
+                description: "O CEO do seu cérebro - responsável pelas funções executivas superiores",
+                functions: [
+                    { icon: "🧠", text: "Planejamento e tomada de decisões estratégicas" },
+                    { icon: "🎯", text: "Controle da atenção e foco sustentado" },
+                    { icon: "🚦", text: "Controle inibitório - resistir a distrações" },
+                    { icon: "🔄", text: "Flexibilidade cognitiva e adaptação" },
+                    { icon: "👤", text: "Autorregulação emocional e comportamental" }
+                ],
+                flowConnection: {
+                    title: "Conexão com o Flow",
+                    description: "Esta região é fundamental para entrar e manter o estado de flow. Quando bem treinada, permite foco profundo, controle da atenção e a capacidade de se perder completamente na atividade. Técnicas de meditação e práticas de atenção plena fortalecem esta área."
+                }
+            },
+            broca: {
+                name: "Área de Broca",
+                icon: "🗣️",
+                description: "Sua central de produção da fala - transforma pensamentos em palavras",
+                functions: [
+                    { icon: "💬", text: "Produção e articulação da fala" },
+                    { icon: "📝", text: "Formação de frases e sintaxe" },
+                    { icon: "🎵", text: "Coordenação dos músculos da fala" },
+                    { icon: "🧠", text: "Processamento gramatical" },
+                    { icon: "🔄", text: "Tradução de ideias em linguagem" }
+                ],
+                flowConnection: {
+                    title: "Conexão com o Flow",
+                    description: "Durante apresentações ou conversas fluidas, esta área trabalha automaticamente, permitindo que você expresse ideias sem esforço consciente. No flow verbal, as palavras 'fluem' naturalmente, criando comunicação eficaz e envolvente."
+                }
+            },
+            motor: {
+                name: "Córtex Motor Primário",
+                icon: "🏃",
+                description: "Seu centro de comando dos movimentos voluntários",
+                functions: [
+                    { icon: "💪", text: "Controle de movimentos voluntários" },
+                    { icon: "🎯", text: "Coordenação motora fina e grossa" },
+                    { icon: "⚡", text: "Execução de movimentos aprendidos" },
+                    { icon: "🤹", text: "Sequenciamento motor complexo" },
+                    { icon: "🎨", text: "Habilidades motoras especializadas" }
+                ],
+                flowConnection: {
+                    title: "Conexão com o Flow",
+                    description: "Essencial para o flow em atividades físicas. Quando bem treinado, permite movimentos automáticos e precisos, liberando a mente consciente. Atletas e músicos dependem desta região para performances fluidas e sem esforço."
+                }
+            },
+            somatossensorial: {
+                name: "Córtex Somatossensorial",
+                icon: "👋",
+                description: "Seu mapa corporal - processa todas as sensações do corpo",
+                functions: [
+                    { icon: "🤚", text: "Processamento do tato e pressão" },
+                    { icon: "🌡️", text: "Sensações de temperatura" },
+                    { icon: "⚡", text: "Propriocepção - consciência corporal" },
+                    { icon: "😣", text: "Percepção de dor" },
+                    { icon: "🗺️", text: "Mapeamento espacial do corpo" }
+                ],
+                flowConnection: {
+                    title: "Conexão com o Flow",
+                    description: "No flow, esta região cria uma conexão íntima com o ambiente. Você sente exatamente onde está no espaço, como seus músculos respondem, criando a sensação de 'fusão' com a atividade. Fundamental para flow em esportes e artes manuais."
+                }
+            },
+            wernicke: {
+                name: "Área de Wernicke",
+                icon: "👂",
+                description: "Sua central de compreensão da linguagem",
+                functions: [
+                    { icon: "👂", text: "Compreensão da linguagem falada" },
+                    { icon: "📖", text: "Interpretação de textos escritos" },
+                    { icon: "🧩", text: "Processamento semântico" },
+                    { icon: "🔗", text: "Conexão entre palavras e significados" },
+                    { icon: "💭", text: "Formação de conceitos linguísticos" }
+                ],
+                flowConnection: {
+                    title: "Conexão com o Flow",
+                    description: "Durante leitura fluida ou conversas envolventes, esta área processa linguagem automaticamente. No flow linguístico, você compreende sem esforço, permitindo foco total no conteúdo e significado, não nas palavras individuais."
+                }
+            },
+            auditivo: {
+                name: "Córtex Auditivo",
+                icon: "🎵",
+                description: "Seu sistema de som surround - processa todos os sons",
+                functions: [
+                    { icon: "🎶", text: "Processamento de frequências sonoras" },
+                    { icon: "🎼", text: "Reconhecimento de padrões musicais" },
+                    { icon: "🗣️", text: "Discriminação de vozes" },
+                    { icon: "📍", text: "Localização espacial de sons" },
+                    { icon: "🔊", text: "Análise de volume e timbre" }
+                ],
+                flowConnection: {
+                    title: "Conexão com o Flow",
+                    description: "Músicos experimentam flow quando esta região processa sons automaticamente. Você 'ouve' a música antes de tocá-la, antecipa harmonias, e responde instintivamente aos ritmos. Também filtra ruídos durante concentração profunda."
+                }
+            },
+            visual: {
+                name: "Córtex Visual Primário",
+                icon: "👁️",
+                description: "Sua tela de alta definição - processa informações visuais",
+                functions: [
+                    { icon: "🌈", text: "Processamento de cores e contrastes" },
+                    { icon: "📐", text: "Detecção de formas e padrões" },
+                    { icon: "🏃", text: "Percepção de movimento" },
+                    { icon: "📏", text: "Análise de profundidade e distância" },
+                    { icon: "⚡", text: "Processamento visual rápido" }
+                ],
+                flowConnection: {
+                    title: "Conexão com o Flow",
+                    description: "No flow visual, você vê com clareza extraordinária. Artistas percebem detalhes sutis, atletas antecipam movimentos, gamers reagem instantaneamente. Esta região filtra distrações visuais, mantendo foco laser no que importa."
+                }
+            },
+            talamo: {
+                name: "Tálamo",
+                icon: "🚦",
+                description: "Sua central de distribuição - filtra e direciona informações",
+                functions: [
+                    { icon: "📡", text: "Retransmissão de informações sensoriais" },
+                    { icon: "🚦", text: "Controle de estados de consciência" },
+                    { icon: "🎛️", text: "Regulação da atenção" },
+                    { icon: "😴", text: "Controle dos ciclos sono-vigília" },
+                    { icon: "🔄", text: "Sincronização de ritmos cerebrais" }
+                ],
+                flowConnection: {
+                    title: "Conexão com o Flow",
+                    description: "O tálamo atua como 'porteiro' do flow, filtrando informações irrelevantes e amplificando sinais importantes. Durante o flow, ele sincroniza diferentes regiões cerebrais, criando a experiência unificada e focada característica deste estado."
+                }
+            },
+            hipotalamo: {
+                name: "Hipotálamo",
+                icon: "⚖️",
+                description: "Seu termostato interno - mantém o equilíbrio corporal",
+                functions: [
+                    { icon: "🌡️", text: "Regulação da temperatura corporal" },
+                    { icon: "💧", text: "Controle da sede e fome" },
+                    { icon: "😴", text: "Regulação dos ritmos circadianos" },
+                    { icon: "💓", text: "Controle do sistema nervoso autônomo" },
+                    { icon: "🧪", text: "Produção de hormônios" }
+                ],
+                flowConnection: {
+                    title: "Conexão com o Flow",
+                    description: "Durante o flow, o hipotálamo mantém seu corpo em estado ideal - temperatura estável, hidratação adequada, energia disponível. Você não sente fome, sede ou desconforto, permitindo foco total na atividade."
+                }
+            },
+            parietal: {
+                name: "Córtex Parietal",
+                icon: "🗺️",
+                description: "Seu GPS interno - processa informações espaciais e sensoriais",
+                functions: [
+                    { icon: "📍", text: "Processamento de informações espaciais" },
+                    { icon: "👋", text: "Integração de informações sensoriais" },
+                    { icon: "🎯", text: "Atenção espacial e orientação" },
+                    { icon: "🤲", text: "Coordenação visuo-motora" },
+                    { icon: "🧮", text: "Processamento numérico e matemático" }
+                ],
+                flowConnection: {
+                    title: "Conexão com o Flow",
+                    description: "No flow, esta região ajuda a criar a sensação de fusão entre você e a atividade. É responsável pela percepção do 'eu' no espaço, e quando menos ativa durante o flow, contribui para a perda da autoconsciência - uma característica chave do estado de flow."
+                }
+            },
+            temporal: {
+                name: "Córtex Temporal",
+                icon: "🎵",
+                description: "Seu arquivo pessoal - processa sons, linguagem e memórias",
+                functions: [
+                    { icon: "👂", text: "Processamento auditivo e reconhecimento de sons" },
+                    { icon: "💬", text: "Compreensão da linguagem (área de Wernicke)" },
+                    { icon: "📚", text: "Formação e recuperação de memórias" },
+                    { icon: "😊", text: "Processamento de emoções e faces" },
+                    { icon: "🎼", text: "Percepção musical e ritmo" }
+                ],
+                flowConnection: {
+                    title: "Conexão com o Flow",
+                    description: "Durante o flow, esta região processa informações de forma mais eficiente, permitindo que você 'ouça' melhor os sinais da atividade. Em músicos, por exemplo, o processamento auditivo se torna mais refinado, contribuindo para a performance fluida."
+                }
+            },
+            occipital: {
+                name: "Córtex Occipital",
+                icon: "👁️",
+                description: "Sua câmera HD - processa toda informação visual",
+                functions: [
+                    { icon: "👀", text: "Processamento visual primário" },
+                    { icon: "🎨", text: "Reconhecimento de cores e formas" },
+                    { icon: "📐", text: "Percepção de movimento e profundidade" },
+                    { icon: "🔍", text: "Detecção de padrões visuais" },
+                    { icon: "⚡", text: "Processamento visual rápido e automático" }
+                ],
+                flowConnection: {
+                    title: "Conexão com o Flow",
+                    description: "No flow, o processamento visual se torna mais eficiente e focado. Você percebe detalhes relevantes com maior clareza enquanto filtra distrações visuais. Atletas relatam 'visão de túnel' positiva - foco visual intenso na tarefa."
+                }
+            },
+            cerebelo: {
+                name: "Cerebelo",
+                icon: "🤸",
+                description: "Seu piloto automático - coordena movimentos e aprendizado motor",
+                functions: [
+                    { icon: "⚖️", text: "Equilíbrio e coordenação motora" },
+                    { icon: "🎯", text: "Precisão e suavidade dos movimentos" },
+                    { icon: "📖", text: "Aprendizado motor e automatização" },
+                    { icon: "⏱️", text: "Timing e sequenciamento temporal" },
+                    { icon: "🧠", text: "Funções cognitivas e linguagem" }
+                ],
+                flowConnection: {
+                    title: "Conexão com o Flow",
+                    description: "Fundamental para o flow em atividades físicas. Quando bem treinado, permite movimentos automáticos e fluidos, liberando a mente consciente para focar na experiência. É por isso que atletas experientes entram em flow mais facilmente."
+                }
+            },
+            tronco: {
+                name: "Tronco Cerebral",
+                icon: "💓",
+                description: "Seu sistema de suporte vital - controla funções básicas da vida",
+                functions: [
+                    { icon: "💨", text: "Controle da respiração automática" },
+                    { icon: "💓", text: "Regulação do ritmo cardíaco" },
+                    { icon: "😴", text: "Ciclos de sono e vigília" },
+                    { icon: "⚡", text: "Estado de alerta e ativação" },
+                    { icon: "🔄", text: "Reflexos básicos de sobrevivência" }
+                ],
+                flowConnection: {
+                    title: "Conexão com o Flow",
+                    description: "Mantém as funções vitais estáveis durante o flow, permitindo que você se concentre totalmente na atividade. Um tronco cerebral saudável garante o estado de alerta ideal - nem muito excitado, nem muito relaxado - perfeito para o flow."
+                }
+            },
+            limbico: {
+                name: "Sistema Límbico",
+                icon: "❤️",
+                description: "Seu centro emocional - processa emoções e motivação",
+                functions: [
+                    { icon: "😊", text: "Processamento de emoções básicas" },
+                    { icon: "🔥", text: "Motivação e sistema de recompensa" },
+                    { icon: "⚠️", text: "Detecção de ameaças e medo" },
+                    { icon: "💝", text: "Formação de vínculos sociais" },
+                    { icon: "🎯", text: "Direcionamento de comportamentos" }
+                ],
+                flowConnection: {
+                    title: "Conexão com o Flow",
+                    description: "Durante o flow, o sistema límbico fica em um estado ideal: motivado mas não ansioso, engajado mas não estressado. A liberação de dopamina e outros neurotransmissores cria a sensação de prazer e recompensa característica do flow."
+                }
+            },
+            hipocampo: {
+                name: "Hipocampo",
+                icon: "💾",
+                description: "Seu HD pessoal - forma e consolida memórias",
+                functions: [
+                    { icon: "💾", text: "Formação de novas memórias" },
+                    { icon: "🗺️", text: "Memória espacial e navegação" },
+                    { icon: "📅", text: "Memória episódica (eventos da vida)" },
+                    { icon: "🔄", text: "Consolidação de memórias durante o sono" },
+                    { icon: "🧠", text: "Neuroplasticidade e aprendizado" }
+                ],
+                flowConnection: {
+                    title: "Conexão com o Flow",
+                    description: "Durante o flow, o hipocampo trabalha de forma otimizada, consolidando habilidades e experiências. Por isso, períodos de flow são tão eficazes para aprendizado. As memórias formadas durante o flow tendem a ser mais vívidas e duradouras."
+                }
+            },
+            amigdala: {
+                name: "Amígdala",
+                icon: "🚨",
+                description: "Seu sistema de alarme - detecta ameaças e processa medo",
+                functions: [
+                    { icon: "⚠️", text: "Detecção rápida de ameaças" },
+                    { icon: "😰", text: "Processamento do medo e ansiedade" },
+                    { icon: "⚡", text: "Respostas de luta ou fuga" },
+                    { icon: "💾", text: "Memórias emocionais intensas" },
+                    { icon: "🎭", text: "Reconhecimento de expressões faciais" }
+                ],
+                flowConnection: {
+                    title: "Conexão com o Flow",
+                    description: "Para entrar em flow, a amígdala precisa estar 'tranquila' - não detectando ameaças. Técnicas de respiração e mindfulness ajudam a acalmar esta região, criando o ambiente mental seguro necessário para o flow. Quando hiperativa, bloqueia o flow."
+                }
+            }
+        };
+
+        // UI Manager
+        class UIManager {
+            constructor(state, vibration) {
+                this.state = state;
+                this.vibration = vibration;
+                this.currentModule = 'flow';
+                this.currentBrainRegion = null;
+                this.zoomLevel = 1;
+                this.isDragging = false;
+                this.dragStart = { x: 0, y: 0 };
+                this.currentTranslate = { x: 0, y: 0 };
+                this.init();
+            }
+
+            init() {
+                this.bindEvents();
+                this.updateMentalStateDisplay();
+                this.updateSmartActions();
+                this.updateDayStats();
+                this.updateStats();
+            }
+
+            bindEvents() {
+                // Navigation
+                document.querySelectorAll('.nav-tab').forEach(tab => {
+                    tab.addEventListener('click', (e) => {
+                        const module = e.target.dataset.module;
+                        if (module) this.showModule(module);
+                    });
+                });
+
+                // Mental state update button
+                document.getElementById('updateStateBtn').addEventListener('click', () => {
+                    this.showCheckinForm();
+                });
+
+                // Check-in form events
+                document.getElementById('saveCheckinBtn').addEventListener('click', () => {
+                    this.saveCheckin();
+                });
+
+                document.getElementById('cancelCheckinBtn').addEventListener('click', () => {
+                    this.hideCheckinForm();
+                });
+
+                // Quick option selection
+                document.querySelectorAll('.quick-option').forEach(option => {
+                    option.addEventListener('click', (e) => {
+                        this.selectQuickOption(e.target);
+                    });
+                });
+
+                // Action cards
+                document.querySelectorAll('.action-card').forEach(card => {
+                    card.addEventListener('click', (e) => {
+                        const action = e.currentTarget.dataset.action;
+                        if (action) this.executeSmartAction(action);
+                    });
+                });
+
+                // Breathing controls
+                document.getElementById('breathingBtn').addEventListener('click', () => {
+                    breathingController.start();
+                });
+                document.getElementById('stopBreathingBtn').addEventListener('click', () => {
+                    breathingController.stop();
+                });
+
+                // Technique cards
+                document.querySelectorAll('.technique-card, .quick-tech-card').forEach(card => {
+                    card.addEventListener('click', (e) => {
+                        const technique = e.currentTarget.dataset.technique;
+                        if (technique) this.startTechnique(technique);
+                    });
+                });
+
+                // Mood selector
+                document.querySelectorAll('.mood-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        this.selectMood(e.target);
+                    });
+                });
+
+                // Diary save
+                document.getElementById('saveDiaryBtn').addEventListener('click', () => {
+                    this.saveDiaryEntry();
+                });
+
+                // Backup controls
+                document.getElementById('backupBtn').addEventListener('click', () => {
+                    this.createBackup();
+                });
+                document.getElementById('importBtn').addEventListener('click', () => {
+                    document.getElementById('backupFile').click();
+                });
+                document.getElementById('backupFile').addEventListener('change', (e) => {
+                    this.importBackup(e.target);
+                });
+
+                // Brain region clicks
+                document.querySelectorAll('.brain-region').forEach(region => {
+                    region.addEventListener('click', (e) => {
+                        const regionName = e.target.dataset.region;
+                        if (regionName) this.showBrainRegion(regionName);
+                    });
+                });
+
+                    // Brain container and SVG controls
+                this.setupBrainControls();
+
+                // Vibration controls
+                document.getElementById('vibrationToggle').addEventListener('click', () => {
+                    const enabled = this.vibration.toggle();
+                    this.showToast(enabled ? 'Vibração ativada! 📳' : 'Vibração desativada', 'info');
+                    if (enabled) {
+                        this.vibration.vibrate(this.vibration.patterns.success);
+                    }
+                });
+
+                document.getElementById('testVibration').addEventListener('click', () => {
+                    if (this.vibration.test()) {
+                        this.showToast('Teste de vibração executado! 🧪', 'success');
+                    } else {
+                        this.showToast('Vibração não disponível ou desativada', 'warning');
+                    }
+                });
+            }
+
+            showModule(moduleId) {
+                // Update tabs
+                document.querySelectorAll('.nav-tab').forEach(tab => {
+                    tab.classList.remove('active');
+                });
+                document.querySelector(`[data-module="${moduleId}"]`).classList.add('active');
+
+                // Update modules
+                document.querySelectorAll('.module').forEach(module => {
+                    module.classList.remove('active');
+                });
+                document.getElementById(moduleId).classList.add('active');
+
+                this.currentModule = moduleId;
+
+                // Update stats when settings is shown
+                if (moduleId === 'settings') {
+                    this.updateStats();
+                    this.vibration.updateStatus();
+                }
+
+                // Gentle vibration on module change
+                this.vibration.vibrate(this.vibration.patterns.gentle);
+            }
+
+            updateMentalStateDisplay() {
+                const stateLabels = {
+                    energy: { 'baixa': 'Baixa', 'media': 'Média', 'alta': 'Alta' },
+                    focus: { 'disperso': 'Disperso', 'medio': 'Médio', 'laser': 'Laser' },
+                    stress: { 'baixo': 'Baixo', 'medio': 'Médio', 'alto': 'Alto' },
+                    mood: { 'baixo': 'Baixo', 'neutro': 'Neutro', 'alto': 'Alto' }
+                };
+
+                const stateClasses = {
+                    energy: { 'baixa': 'low', 'media': 'medium', 'alta': 'high' },
+                    focus: { 'disperso': 'low', 'medio': 'medium', 'laser': 'high' },
+                    stress: { 'baixo': 'high', 'medio': 'medium', 'alto': 'low' }, // Inverted for stress
+                    mood: { 'baixo': 'low', 'neutro': 'medium', 'alto': 'high' }
+                };
+
+                Object.keys(this.state.data.mentalState).forEach(key => {
+                    const value = this.state.data.mentalState[key];
+                    const valueElement = document.getElementById(`${key}Value`);
+                    const cardElement = document.getElementById(`${key}Card`);
+                    
+                    if (valueElement) {
+                        valueElement.textContent = stateLabels[key][value];
+                    }
+                    
+                    if (cardElement) {
+                        // Remove existing classes
+                        cardElement.classList.remove('low', 'medium', 'high');
+                        // Add new class
+                        cardElement.classList.add(stateClasses[key][value]);
+                    }
+                });
+            }
+
+            showCheckinForm() {
+                const checkinCard = document.getElementById('quickCheckinCard');
+                if (checkinCard) {
+                    checkinCard.style.display = 'block';
+                    checkinCard.scrollIntoView({ behavior: 'smooth' });
+                }
+                this.vibration.vibrate(this.vibration.patterns.gentle);
+            }
+
+            hideCheckinForm() {
+                const checkinCard = document.getElementById('quickCheckinCard');
+                if (checkinCard) {
+                    checkinCard.style.display = 'none';
+                }
+                // Clear selections
+                document.querySelectorAll('.quick-option').forEach(option => {
+                    option.classList.remove('selected');
+                });
+            }
+
+            selectQuickOption(button) {
+                const category = button.dataset.category;
+                const value = button.dataset.value;
+                
+                // Clear other selections in same category
+                document.querySelectorAll(`[data-category="${category}"]`).forEach(opt => {
+                    opt.classList.remove('selected');
+                });
+                
+                // Select this option
+                button.classList.add('selected');
+                
+                this.vibration.vibrate(this.vibration.patterns.gentle);
+            }
+
+            saveCheckin() {
+                const newState = {};
+                let hasSelection = false;
+                
+                // Collect selected values
+                ['energy', 'focus', 'stress', 'mood'].forEach(category => {
+                    const selected = document.querySelector(`[data-category="${category}"].selected`);
+                    if (selected) {
+                        newState[category] = selected.dataset.value;
+                        hasSelection = true;
+                    }
+                });
+                
+                if (!hasSelection) {
+                    this.showToast('Selecione pelo menos uma opção', 'warning');
+                    this.vibration.vibrate(this.vibration.patterns.double);
+                    return;
+                }
+                
+                // Update state
+                this.state.updateMentalState(newState);
+                
+                // Update displays
+                this.updateMentalStateDisplay();
+                this.updateSmartActions();
+                this.updateDayStats();
+                
+                // Hide form
+                this.hideCheckinForm();
+                
+                this.showToast('Estado mental atualizado! 🎯', 'success');
+                this.vibration.vibrate(this.vibration.patterns.success);
+            }
+
+            updateSmartActions() {
+                const actions = document.querySelectorAll('.action-card');
+                const state = this.state.data.mentalState;
+                
+                // Remove all recommended classes
+                actions.forEach(action => action.classList.remove('recommended'));
+                
+                // Add recommendations based on current state
+                if (state.energy === 'baixa') {
+                    const energyAction = document.querySelector('[data-action="energy-boost"]');
+                    if (energyAction) energyAction.classList.add('recommended');
+                }
+                
+                if (state.focus === 'disperso') {
+                    const focusAction = document.querySelector('[data-action="focus-boost"]');
+                    if (focusAction) focusAction.classList.add('recommended');
+                }
+                
+                if (state.stress === 'alto') {
+                    const stressAction = document.querySelector('[data-action="stress-relief"]');
+                    if (stressAction) stressAction.classList.add('recommended');
+                }
+            }
+
+            executeSmartAction(actionType) {
+                const actions = {
+                    'focus-boost': {
+                        title: '🎯 Turbinando seu Foco',
+                        steps: [
+                            '1. Feche os olhos e respire fundo 3 vezes',
+                            '2. Conte de 10 a 1, visualizando cada número',
+                            '3. Defina UMA tarefa específica para os próximos 25 min',
+                            '4. Elimine todas as distrações (celular, notificações)',
+                            '5. Comece devagar, sem pressa'
+                        ]
+                    },
+                    'energy-boost': {
+                        title: '⚡ Ativando sua Energia',
+                        steps: [
+                            '1. Levante-se e alongue braços para cima (10 seg)',
+                            '2. Faça 10 polichinelos ou pule no lugar',
+                            '3. Beba um copo de água gelada',
+                            '4. Respire fundo pelo nariz, expire pela boca (5x)',
+                            '5. Sorria e defina sua próxima ação'
+                        ]
+                    },
+                    'stress-relief': {
+                        title: '😌 Aliviando a Tensão',
+                        steps: [
+                            '1. Sente-se confortavelmente e feche os olhos',
+                            '2. Respire lentamente: 4 seg inspirar, 6 seg expirar',
+                            '3. Relaxe músculos do rosto, ombros e mãos',
+                            '4. Pense em 3 coisas pelas quais é grato',
+                            '5. Abra os olhos e sorria suavemente'
+                        ]
+                    }
+                };
+                
+                const action = actions[actionType];
+                if (!action) return;
+                
+                let message = `${action.title}\n\n${action.steps.join('\n')}`;
+                
+                this.showToast(message, 'info');
+                this.state.addTechniqueUsed(actionType);
+                this.updateStats();
+                this.vibration.vibrate(this.vibration.patterns.technique);
+                
+                // Update focus time if it's a focus action
+                if (actionType === 'focus-boost') {
+                    this.state.data.stats.focusTime += 25; // 25 minutes
+                    this.updateDayStats();
+                }
+            }
+
+            updateDayStats() {
+                const stats = this.state.getTodayStats();
+                
+                const elements = {
+                    todayCheckins: document.getElementById('todayCheckins'),
+                    focusTime: document.getElementById('focusTime'),
+                    energyAvg: document.getElementById('energyAvg'),
+                    moodTrend: document.getElementById('moodTrend')
+                };
+                
+                if (elements.todayCheckins) elements.todayCheckins.textContent = stats.checkins;
+                if (elements.focusTime) elements.focusTime.textContent = stats.focusTime;
+                if (elements.energyAvg) elements.energyAvg.textContent = stats.energyAvg;
+                if (elements.moodTrend) elements.moodTrend.textContent = stats.moodTrend;
+            }
+
+            startTechnique(type) {
+                const techniques = {
+                    // Quick techniques
+                    'micro-break': 'Pare tudo. Respire fundo 3x. Alongue pescoço. Pisque 10x devagar. Beba água. Volte renovado!',
+                    'cold-water': 'Vá até uma pia. Molhe as mãos com água fria e aplique no rosto, especialmente nas têmporas e nuca. Respire profundamente 3 vezes. Sinta a ativação instantânea!',
+                    'box-breathing': 'Inspire por 4 seg, segure por 4 seg, expire por 4 seg, segure vazio por 4 seg. Repita 10 ciclos. Mantenha ritmo constante.',
+                    'sensory-grounding': '5 coisas que VÊ, 4 que OUVE, 3 que TOCA, 2 que CHEIRA, 1 que SABOREIA. Foque totalmente em cada sensação.',
+                    
+                    // Main techniques
+                    'pomodoro-flow': 'Escolha UMA tarefa. Configure 25 min. Trabalhe sem interrupções. Ao terminar, faça 5 min de pausa consciente (respire, alongue, hidrate).',
+                    'vestibular': 'Sente-se confortavelmente. Faça movimentos lentos com a cabeça: para cima e para baixo (5x), depois para os lados (5x). Finalize com círculos suaves (3 para cada lado).',
+                    'brain-dump': 'Pegue papel e caneta. Escreva TUDO que está na sua mente por 5-10 min. Não pare, não julgue. Apenas despeje todos os pensamentos.',
+                    'ram': 'Feche os olhos. Imagine sua mente como um computador. Visualize arquivos desnecessários sendo deletados. Respire fundo a cada "exclusão".',
+                    'laminar': 'Escolha uma atividade simples. Comece devagar, sem pensar no resultado. Deixe o movimento fluir naturalmente. Confie no processo automático.',
+                    'progressive-relaxation': 'Deite-se. Tense músculos dos pés (5 seg), relaxe (10 seg). Suba: panturrilhas, coxas, abdômen, braços, rosto. Sinta o contraste.',
+                    'diffuse-thinking': 'Pare de forçar soluções. Faça algo relaxante: banho, caminhada, música. Deixe a mente vagar livremente. Insights virão naturalmente.',
+                    'walking-meditation': 'Caminhe devagar. Sinta cada passo: calcanhar, planta, dedos. Observe respiração e ambiente. Sem pressa, apenas presença.'
+                };
+                
+                this.showToast(techniques[type] || 'Técnica não encontrada.', 'info');
+                this.state.addTechniqueUsed(type);
+                this.updateStats();
+                this.vibration.vibrate(this.vibration.patterns.technique);
+            }
+
+            selectMood(button) {
+                document.querySelectorAll('.mood-btn').forEach(btn => {
+                    btn.classList.remove('selected');
+                });
+                button.classList.add('selected');
+                this.state.data.currentMood = button.dataset.mood;
+                this.vibration.vibrate(this.vibration.patterns.gentle);
+            }
+
+            saveDiaryEntry() {
+                const textarea = document.getElementById('diaryText');
+                const entry = textarea.value.trim();
+                
+                if (!entry && !this.state.data.currentMood) {
+                    this.showToast('Adicione pelo menos um humor ou texto.', 'warning');
+                    this.vibration.vibrate(this.vibration.patterns.double);
+                    return;
+                }
+                
+                this.state.addDiaryEntry(this.state.data.currentMood, entry);
+                
+                // Clear form
+                textarea.value = '';
+                document.querySelectorAll('.mood-btn').forEach(btn => {
+                    btn.classList.remove('selected');
+                });
+                this.state.data.currentMood = null;
+                
+                this.showToast('Entrada salva com sucesso! 📝', 'success');
+                this.updateStats();
+                this.vibration.vibrate(this.vibration.patterns.success);
+            }
+
+            createBackup() {
+                const backupData = {
+                    ...this.state.data,
+                    stats: {
+                        ...this.state.data.stats,
+                        techniquesUsed: Array.from(this.state.data.stats.techniquesUsed)
+                    },
+                    backupDate: new Date().toISOString(),
+                    version: '3.2'
+                };
+                
+                const dataStr = JSON.stringify(backupData, null, 2);
+                const dataBlob = new Blob([dataStr], {type: 'application/json'});
+                const url = URL.createObjectURL(dataBlob);
+                
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `mindflow-backup-${new Date().toISOString().split('T')[0]}.json`;
+                link.click();
+                
+                URL.revokeObjectURL(url);
+                this.showToast('Backup criado com sucesso! 💾', 'success');
+                this.vibration.vibrate(this.vibration.patterns.success);
+            }
+
+            importBackup(input) {
+                const file = input.files[0];
+                if (!file) return;
+                
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const backupData = JSON.parse(e.target.result);
+                        
+                        if (!backupData.version || !backupData.backupDate) {
+                            throw new Error('Invalid backup format');
+                        }
+                        
+                        // Restore data
+                        this.state.data = { ...this.state.data, ...backupData };
+                        if (backupData.stats && backupData.stats.techniquesUsed) {
+                            this.state.data.stats.techniquesUsed = new Set(backupData.stats.techniquesUsed);
+                        }
+                        this.state.saveToStorage();
+                        
+                        this.showToast('Backup importado com sucesso! 📤', 'success');
+                        this.updateFlowDisplay();
+                        this.updateStats();
+                        this.vibration.vibrate(this.vibration.patterns.success);
+                    } catch (error) {
+                        this.showToast('Erro ao importar backup.', 'error');
+                        this.vibration.vibrate(this.vibration.patterns.double);
+                    }
+                };
+                reader.readAsText(file);
+            }
+
+            updateStats() {
+                const elements = {
+                    breathing: document.getElementById('breathingStats'),
+                    diary: document.getElementById('diaryStats'),
+                    techniques: document.getElementById('techniqueStats')
+                };
+                
+                if (elements.breathing) {
+                    elements.breathing.textContent = this.state.data.stats.breathingSessions;
+                }
+                if (elements.diary) {
+                    elements.diary.textContent = this.state.data.stats.diaryEntries;
+                }
+                if (elements.techniques) {
+                    elements.techniques.textContent = this.state.data.stats.techniquesUsed.size;
+                }
+            }
+
+            showBrainRegion(regionName) {
+                const region = brainRegions[regionName];
+                if (!region) return;
+
+                // Clear previous active states
+                document.querySelectorAll('.brain-region').forEach(r => {
+                    r.classList.remove('active');
+                });
+
+                // Set new active region
+                const regionElement = document.querySelector(`[data-region="${regionName}"]`);
+                if (regionElement) {
+                    regionElement.classList.add('active');
+                }
+
+                // Update info panel
+                const infoPanel = document.getElementById('brainInfo');
+                if (!infoPanel) return;
+
+                infoPanel.classList.add('active');
+                infoPanel.innerHTML = `
+                    <div class="region-info">
+                        <h4>${region.icon} ${region.name}</h4>
+                        <p>${region.description}</p>
+                        
+                        <ul class="function-list">
+                            ${region.functions.map(func => `
+                                <li>
+                                    <span class="function-icon">${func.icon}</span>
+                                    <span>${func.text}</span>
+                                </li>
+                            `).join('')}
+                        </ul>
+                        
+                        <div class="flow-connection">
+                            <h5>🌊 ${region.flowConnection.title}</h5>
+                            <p>${region.flowConnection.description}</p>
+                        </div>
+                    </div>
+                `;
+
+                this.currentBrainRegion = regionName;
+                this.vibration.vibrate(this.vibration.patterns.gentle);
+            }
+
+            // Zoom and drag methods
+            zoomIn() {
+                this.zoomLevel = Math.min(this.zoomLevel * 1.3, 4);
+                this.updateTransform();
+                this.vibration.vibrate(this.vibration.patterns.gentle);
+            }
+
+            zoomOut() {
+                this.zoomLevel = Math.max(this.zoomLevel / 1.3, 0.5);
+                this.updateTransform();
+                this.vibration.vibrate(this.vibration.patterns.gentle);
+            }
+
+            resetZoom() {
+                this.zoomLevel = 1;
+                this.currentTranslate = { x: 0, y: 0 };
+                this.updateTransform();
+                this.vibration.vibrate(this.vibration.patterns.double);
+            }
+
+            updateTransform() {
+                const brainSvg = document.getElementById('brainSvg');
+                if (!brainSvg) return;
+
+                const transform = `scale(${this.zoomLevel}) translate(${this.currentTranslate.x}px, ${this.currentTranslate.y}px)`;
+                brainSvg.style.transform = transform;
+
+                // Update cursor and class
+                if (this.zoomLevel > 1) {
+                    brainSvg.classList.add('zoomed');
+                } else {
+                    brainSvg.classList.remove('zoomed');
+                }
+            }
+
+            startDrag(e) {
+                // Allow dragging even at zoom level 1 for better UX
+                this.isDragging = true;
+                this.dragStart.x = e.clientX - this.currentTranslate.x;
+                this.dragStart.y = e.clientY - this.currentTranslate.y;
+                
+                const brainSvg = document.getElementById('brainSvg');
+                if (brainSvg) {
+                    brainSvg.style.transition = 'none';
+                    brainSvg.style.cursor = 'grabbing';
+                }
+            }
+
+            drag(e) {
+                if (!this.isDragging) return;
+                
+                this.currentTranslate.x = e.clientX - this.dragStart.x;
+                this.currentTranslate.y = e.clientY - this.dragStart.y;
+                
+                // More generous drag bounds
+                const maxTranslate = this.zoomLevel > 1 ? 300 * this.zoomLevel : 100;
+                this.currentTranslate.x = Math.max(-maxTranslate, Math.min(maxTranslate, this.currentTranslate.x));
+                this.currentTranslate.y = Math.max(-maxTranslate, Math.min(maxTranslate, this.currentTranslate.y));
+                
+                this.updateTransform();
+            }
+
+            endDrag() {
+                if (!this.isDragging) return;
+                
+                this.isDragging = false;
+                const brainSvg = document.getElementById('brainSvg');
+                if (brainSvg) {
+                    brainSvg.style.transition = 'transform 0.3s ease';
+                    brainSvg.style.cursor = this.zoomLevel > 1 ? 'grab' : 'pointer';
+                }
+            }
+
+            setupBrainControls() {
+                const brainContainer = document.getElementById('brainContainer');
+                const brainSvg = document.getElementById('brainSvg');
+                
+                if (!brainContainer || !brainSvg) return;
+
+                // Variables for touch handling
+                let initialDistance = 0;
+                let initialZoom = 1;
+                let lastTap = 0;
+                let touchCount = 0;
+
+                const getDistance = (touches) => {
+                    const dx = touches[0].clientX - touches[1].clientX;
+                    const dy = touches[0].clientY - touches[1].clientY;
+                    return Math.sqrt(dx * dx + dy * dy);
+                };
+
+                // Mouse events for drag
+                brainSvg.addEventListener('mousedown', (e) => {
+                    e.preventDefault();
+                    this.startDrag(e);
+                });
+
+                document.addEventListener('mousemove', (e) => {
+                    this.drag(e);
+                });
+
+                document.addEventListener('mouseup', () => {
+                    this.endDrag();
+                });
+
+                // Touch events - more robust handling
+                brainContainer.addEventListener('touchstart', (e) => {
+                    touchCount = e.touches.length;
+                    
+                    if (touchCount === 1) {
+                        // Single touch - start drag
+                        this.startDrag(e.touches[0]);
+                    } else if (touchCount === 2) {
+                        // Two fingers - start zoom
+                        e.preventDefault();
+                        this.endDrag(); // Stop any dragging
+                        initialDistance = getDistance(e.touches);
+                        initialZoom = this.zoomLevel;
+                    }
+                }, { passive: false });
+
+                brainContainer.addEventListener('touchmove', (e) => {
+                    if (touchCount === 1) {
+                        // Single finger drag
+                        e.preventDefault();
+                        this.drag(e.touches[0]);
+                    } else if (touchCount === 2) {
+                        // Two finger zoom
+                        e.preventDefault();
+                        const currentDistance = getDistance(e.touches);
+                        const scale = currentDistance / initialDistance;
+                        this.zoomLevel = Math.max(0.5, Math.min(4, initialZoom * scale));
+                        this.updateTransform();
+                    }
+                }, { passive: false });
+
+                brainContainer.addEventListener('touchend', (e) => {
+                    const currentTime = new Date().getTime();
+                    const tapLength = currentTime - lastTap;
+                    
+                    // Handle drag end
+                    if (touchCount === 1) {
+                        this.endDrag();
+                    }
+                    
+                    // Double tap to reset zoom (only if no fingers remaining)
+                    if (e.touches.length === 0) {
+                        if (tapLength < 500 && tapLength > 0) {
+                            this.resetZoom();
+                        }
+                        touchCount = 0;
+                    }
+                    
+                    lastTap = currentTime;
+                });
+
+                // Mouse wheel zoom
+                brainContainer.addEventListener('wheel', (e) => {
+                    e.preventDefault();
+                    if (e.deltaY < 0) {
+                        this.zoomIn();
+                    } else {
+                        this.zoomOut();
+                    }
+                }, { passive: false });
+
+                // Prevent context menu on long press
+                brainContainer.addEventListener('contextmenu', (e) => {
+                    e.preventDefault();
+                });
+            }
+
+            showToast(message, type = 'info') {
+                const toast = document.createElement('div');
+                toast.className = `toast ${type}`;
+                toast.textContent = message;
+                document.body.appendChild(toast);
+                
+                setTimeout(() => {
+                    toast.style.animation = 'slideOut 0.3s ease';
+                    setTimeout(() => toast.remove(), 300);
+                }, 3000);
+            }
+        }
+
+        // Breathing Controller
+        class BreathingController {
+            constructor(state, ui, vibration) {
+                this.state = state;
+                this.ui = ui;
+                this.vibration = vibration;
+                this.phases = [
+                    { name: 'Inspire', duration: 4, action: 'inhale' },
+                    { name: 'Segure', duration: 7, action: 'hold' },
+                    { name: 'Expire', duration: 8, action: 'exhale' }
+                ];
+                this.reset();
+            }
+
+            reset() {
+                this.currentPhase = 0;
+                this.count = 0;
+                this.active = false;
+                if (this.interval) {
+                    clearInterval(this.interval);
+                    this.interval = null;
+                }
+            }
+
+            start() {
+                if (this.active) return;
+                
+                this.active = true;
+                this.state.data.breathingActive = true;
+                
+                const btn = document.getElementById('breathingBtn');
+                const text = document.getElementById('breathingText');
+                
+                if (btn) {
+                    btn.textContent = 'Respirando...';
+                    btn.disabled = true;
+                }
+                
+                this.interval = setInterval(() => this.tick(), 1000);
+                this.state.incrementBreathingSessions();
+                this.ui.updateStats();
+                
+                // Welcome vibration
+                this.vibration.vibrate(this.vibration.patterns.pulse);
+            }
+
+            tick() {
+                const phase = this.phases[this.currentPhase];
+                const text = document.getElementById('breathingText');
+                const circle = document.getElementById('breathingCircle');
+                
+                if (!text || !circle) return;
+                
+                const remaining = phase.duration - this.count;
+                text.textContent = `${phase.name} ${remaining}`;
+                
+                // Apply visual effects
+                circle.classList.remove('inhale', 'exhale');
+                if (phase.action === 'inhale') {
+                    circle.classList.add('inhale');
+                } else if (phase.action === 'exhale') {
+                    circle.classList.add('exhale');
+                }
+                
+                // Vibration feedback on phase transitions
+                if (this.count === 0) {
+                    if (phase.action === 'inhale') {
+                        this.vibration.vibrate(this.vibration.patterns.breatheIn);
+                    } else if (phase.action === 'exhale') {
+                        this.vibration.vibrate(this.vibration.patterns.breatheOut);
+                    } else if (phase.action === 'hold') {
+                        this.vibration.vibrate(this.vibration.patterns.hold);
+                    }
+                }
+                
+                this.count++;
+                
+                if (this.count >= phase.duration) {
+                    this.currentPhase = (this.currentPhase + 1) % this.phases.length;
+                    this.count = 0;
+                }
+            }
+
+            stop() {
+                if (!this.active) return;
+                
+                this.reset();
+                this.state.data.breathingActive = false;
+                
+                const btn = document.getElementById('breathingBtn');
+                const text = document.getElementById('breathingText');
+                const circle = document.getElementById('breathingCircle');
+                
+                if (btn) {
+                    btn.textContent = 'Iniciar Respiração 4-7-8';
+                    btn.disabled = false;
+                }
+                if (text) {
+                    text.textContent = 'Clique para começar';
+                }
+                if (circle) {
+                    circle.classList.remove('inhale', 'exhale');
+                }
+                
+                // Completion vibration
+                this.vibration.vibrate(this.vibration.patterns.success);
+            }
+        }
+
+        // Initialize App
+        const vibrationController = new VibrationController();
+        const appState = new AppState();
+        const uiManager = new UIManager(appState, vibrationController);
+        const breathingController = new BreathingController(appState, uiManager, vibrationController);
+
+        // Auto-save every 30 seconds
+        setInterval(() => {
+            appState.saveToStorage();
+        }, 30000);
+
+        // Save on page unload
+        window.addEventListener('beforeunload', () => {
+            appState.saveToStorage();
+        });
+
+        // Stop breathing on page hide
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden && breathingController.active) {
+                breathingController.stop();
+            }
+        });
+
+
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'984abddac4a1f177',t:'MTc1ODgwNTYxNS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
